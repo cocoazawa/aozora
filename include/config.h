@@ -1,5 +1,5 @@
 // robot-config.h
-// Copyright (C) 2025 cocoazawa
+// Copyright (C) 2025 Project Aozora Collaborators
 // 
 // Written by Peter G.
 
