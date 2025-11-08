@@ -1,4 +1,4 @@
-// robot-config.cpp
+// robot-config.h
 // Copyright (C) 2025 cocoazawa
 // 
 // Written by Peter G.
@@ -10,8 +10,10 @@ using namespace vex;
 brain Brain;
 
 // pistons
-vex::triport::port PistonBackPort = Brain.ThreeWirePort.B;
-vex::triport::port PistonBackPort = Brain.ThreeWirePort.A;
+vex::triport::port RubberBandPistonPort = Brain.ThreeWirePort.B;
+vex::triport::port IntakePistonPort = Brain.ThreeWirePort.A;
+pneumatics RubberBandPiston(RubberBandPistonPort);
+pneumatics IntakePiston(IntakePistonPort);
 
 
 // drivetrain setup
@@ -32,7 +34,6 @@ motor MotorConveyorA = motor(PORT10);
 motor MotorConveyorB = motor(PORT10);
 
 // pneumatics
-pneumatics SomePiston(PistonBackPort);
 
 void initializeVEX(void) {
     // idk why vex has this function

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2025 cocoazawa
 
-#include "robot-config.cpp"
+#include "robot-config.h"
 #include "vex.h"
 
 using namespace vex;
@@ -10,40 +10,33 @@ using namespace vex;
 competition Competition;
 controller control = controller();
 
-digital_out piston = digital_out(Brain.ThreeWirePort.H);
-
-void trigger(digital_out &triggerable)
-{
-    switch (triggerable.value())
-    {
-    case 1:
-        triggerable.set(false);
-        break;
-    case 0:
-        triggerable.set(true);
-        break;
-    default:
-        break;
+void trigger(pneumatics& piston) {
+    switch (piston.value()) {
+        case 1:
+            piston.set(false);
+            break;
+        case 0:
+            piston.set(true);
+            break;
+        default:
+            break;
     }
 }
 
-void preAutonomous(void)
-{
+void preAutonomous(void) {
     initializeVEX();
 }
 
-void autonomous(void)
-{
+void autonomous(void) {
 }
 
-void userControl(void)
-{
-    auto triggerPiston = []()
-    { trigger(piston); };
+void userControl(void) {
+    auto triggerRubberBand = []() { trigger(RubberBandPiston); };
+    auto triggerIntake = []() { trigger(IntakePiston); };
 
-    while (1)
-    {
-        control.ButtonL1.pressed(triggerPiston);
+    while (1) {
+        control.ButtonL1.pressed(triggerRubberBand);
+        control.ButtonL2.pressed(triggerIntake);
 
         wait(10, msec);
     }
@@ -52,8 +45,7 @@ void userControl(void)
 //
 // Main will set up the competition functions and callbacks.
 //
-int main()
-{
+int main() {
     // Set up callbacks for autonomous and driver control periods.
     Competition.autonomous(autonomous);
     Competition.drivercontrol(userControl);
@@ -62,8 +54,7 @@ int main()
     preAutonomous();
 
     // Prevent main from exiting with an infinite loop.
-    while (true)
-    {
+    while (true) {
         wait(100, msec);
     }
 }

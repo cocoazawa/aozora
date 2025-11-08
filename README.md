@@ -7,7 +7,7 @@ This code is specially licensed to VEX V5 Team 76371A/B/C for the game season. T
 
 ## About
 
-This project is the main team project
+This project is the coding portion of the team for the main robot
 
 
 ## Listed Collaborators
