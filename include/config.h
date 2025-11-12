@@ -7,7 +7,13 @@
 
 using namespace vex;
 
+// brain setup
 brain Brain;
+
+int bestRPM = 600;
+// time in the unit of msec
+int ElapseGoalTime = 8;
+
 
 // pistons
 vex::triport::port RubberBandPistonPort = Brain.ThreeWirePort.B;
@@ -17,23 +23,23 @@ pneumatics IntakePiston(IntakePistonPort);
 
 
 // drivetrain setup
-motor MotorLeftFront = motor(PORT10);
-motor MotorLeftMid = motor(PORT10);
-motor MotorLeftBack = motor(PORT10);
-motor MotorRightFront = motor(PORT10);
-motor MotorRightMid = motor(PORT10);
-motor MotorRightBack = motor(PORT10);
+motor MotorLeftFront = motor(PORT5, ratio6_1, false);
+motor MotorLeftMid = motor(PORT6, ratio6_1, false);
+motor MotorLeftBack = motor(PORT7, ratio6_1, true);
+
+motor MotorRightFront = motor(PORT8, ratio6_1, true);
+motor MotorRightMid = motor(PORT9, ratio6_1, true);
+motor MotorRightBack = motor(PORT10, ratio6_1, false);
 
 motor_group MotorLeftGroup = motor_group(MotorLeftFront, MotorLeftMid, MotorLeftBack);
 motor_group MotorRightGroup = motor_group(MotorRightFront, MotorRightMid, MotorRightBack);
 
-drivetrain MainDrivetrain = drivetrain(MotorLeftGroup, MotorRightGroup);
 
 // conveyor belts/spinny thing setup
-motor MotorConveyorA = motor(PORT10);
-motor MotorConveyorB = motor(PORT10);
+motor MotorConveyor = motor(PORT4, ratio6_1, true);
+motor MotorIntake = motor(PORT3, ratio6_1, true);
 
-// pneumatics
+
 
 void initializeVEX(void) {
     // idk why vex has this function

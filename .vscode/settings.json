@@ -4,7 +4,12 @@
 	],
 	"cSpell.words": [
 		"Aozora",
+		"chronos",
 		"triggerable",
 		"vexcode"
-	]
+	],
+	"files.associations": {
+		"typeinfo": "cpp",
+		"chrono": "cpp"
+	}
 }

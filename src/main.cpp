@@ -5,11 +5,12 @@
 
 #include "config.h"
 #include "vex.h"
+#include "chronoAssist.h"
 
 using namespace vex;
 
 competition Competition;
-controller control = controller();
+controller primaryController = controller();
 
 void trigger(pneumatics& piston) {
     switch (piston.value()) {
@@ -32,14 +33,47 @@ void autonomous(void) {
 }
 
 void userControl(void) {
-    auto triggerRubberBand = []() { trigger(RubberBandPiston); };
-    auto triggerIntake = []() { trigger(IntakePiston); };
+    ChronoAssist chronos(1.0);
+    
+    auto RubberBandPistonButton = primaryController.ButtonX;
+    auto IntakePistonButton = primaryController.ButtonB;
+    auto ConveyorAButton = primaryController.ButtonX;
+    auto ConveyorBButton = primaryController.ButtonX;
+
+    auto triggerRubberBandPiston = []() { trigger(RubberBandPiston); };
+    auto triggerIntakePiston = []() { trigger(IntakePiston); };
+    
+    auto triggerConveyorA = []() { trigger(IntakePiston); };
+    auto triggerConveyorB = []() { trigger(IntakePiston); };
 
     while (1) {
-        control.ButtonL1.pressed(triggerRubberBand);
-        control.ButtonL2.pressed(triggerIntake);
+        chronos.start();
 
-        wait(10, msec);
+        RubberBandPistonButton.pressed(triggerRubberBandPiston);
+        IntakePistonButton.pressed(triggerIntakePiston);
+        ConveyorAButton.pressed(triggerConveyorA);
+        ConveyorBButton.pressed(triggerConveyorB);
+
+        int velocityMultiplier = primaryController.Axis2.position() / 100;
+        int sidewaysMultiplier = primaryController.Axis1.position() / 100;
+
+        int leftVelocity = velocityMultiplier * bestRPM;
+        int rightVelocity = velocityMultiplier * bestRPM;
+
+        if (velocityMultiplier == 0) {
+            leftVelocity = bestRPM * sidewaysMultiplier;
+            rightVelocity = bestRPM * sidewaysMultiplier;
+        } else if (sidewaysMultiplier < 0) {
+            leftVelocity = velocityMultiplier * bestRPM * abs(sidewaysMultiplier);
+        } else if (sidewaysMultiplier > 0) {
+            rightVelocity = velocityMultiplier * bestRPM * abs(sidewaysMultiplier);
+        }
+
+        MotorLeftGroup.spin(forward, leftVelocity, rpm);
+        MotorRightGroup.spin(forward, rightVelocity, rpm);
+
+        auto endTime = chronos.ending();
+        wait(endTime, msec);
     }
 }
 
