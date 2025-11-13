@@ -12,14 +12,17 @@ class ChronoAssist {
         double minPoint;
     
     public:
+        // constructor, sets minPoint
         ChronoAssist(double minPoint) {
             minPoint = minPoint;
         }
 
+        // sets start time
         void start() {
             startPoint = std::chrono::system_clock::now();
         }
         
+        // sets end time, calculates final stop time for the return
         int64_t ending() {
             endPoint = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsedTime = endPoint - startPoint;
