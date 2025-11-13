@@ -6,24 +6,14 @@
 #include "config.h"
 #include "vex.h"
 #include "chronoAssist.h"
+#include "auxilary.h"
 
 using namespace vex;
 
+// introduce competition and controller objects
 competition Competition;
 controller primaryController = controller();
 
-void trigger(pneumatics& piston) {
-    switch (piston.value()) {
-        case 1:
-            piston.set(false);
-            break;
-        case 0:
-            piston.set(true);
-            break;
-        default:
-            break;
-    }
-}
 
 void preAutonomous(void) {
     initializeVEX();
