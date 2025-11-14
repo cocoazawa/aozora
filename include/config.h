@@ -10,7 +10,10 @@ using namespace vex;
 // brain setup
 brain Brain;
 
-int bestRPM = 600;
+// maximum direct rpm output from the motor
+int MaximumDirect_RPM = 600;
+// ratio remapping from the direct output to the actual output (yes, this CAN be simplified; it SHOULD NOT BE SIMPLIFIED)
+int Ratio = 60/36;
 // time in the unit of msec
 int ElapseGoalTime = 8;
 
@@ -36,12 +39,18 @@ motor_group MotorRightGroup = motor_group(MotorRightFront, MotorRightMid, MotorR
 
 
 // conveyor belts/spinny thing setup
-motor MotorConveyor = motor(PORT4, ratio6_1, true);
+motor MotorSpinner = motor(PORT4, ratio6_1, true);
 motor MotorIntake = motor(PORT3, ratio6_1, true);
 
 
 
 void initializeVEX(void) {
-    // idk why vex has this function
-    // maybe for VEXCode PRO? that's deprecated tho;
+    MotorLeftFront.setBrake(vex::brakeType::hold);
+    MotorLeftMid.setBrake(vex::brakeType::hold);
+    MotorLeftBack.setBrake(vex::brakeType::hold);
+    MotorRightFront.setBrake(vex::brakeType::hold);
+    MotorRightMid.setBrake(vex::brakeType::hold);
+    MotorRightBack.setBrake(vex::brakeType::hold);
+    MotorSpinner.setBrake(vex::brakeType::hold);
+    MotorIntake.setBrake(vex::brakeType::hold);
 }

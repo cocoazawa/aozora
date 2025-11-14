@@ -6,24 +6,14 @@
 #include "config.h"
 #include "vex.h"
 #include "chronoAssist.h"
+#include "auxilary.h"
 
 using namespace vex;
 
+// introduce competition and controller objects
 competition Competition;
 controller primaryController = controller();
 
-void trigger(pneumatics& piston) {
-    switch (piston.value()) {
-        case 1:
-            piston.set(false);
-            break;
-        case 0:
-            piston.set(true);
-            break;
-        default:
-            break;
-    }
-}
 
 void preAutonomous(void) {
     initializeVEX();
@@ -37,36 +27,51 @@ void userControl(void) {
     
     auto RubberBandPistonButton = primaryController.ButtonX;
     auto IntakePistonButton = primaryController.ButtonB;
-    auto ConveyorAButton = primaryController.ButtonX;
-    auto ConveyorBButton = primaryController.ButtonX;
+    auto IntakeButton = primaryController.ButtonL2;
+    auto SpinnerButton = primaryController.ButtonL1;
 
     auto triggerRubberBandPiston = []() { trigger(RubberBandPiston); };
     auto triggerIntakePiston = []() { trigger(IntakePiston); };
-    
-    auto triggerConveyorA = []() { trigger(IntakePiston); };
-    auto triggerConveyorB = []() { trigger(IntakePiston); };
 
     RubberBandPistonButton.pressed(triggerRubberBandPiston);
-    IntakePistonButton.pressed(triggerIntakePiston);
-    ConveyorAButton.pressed(triggerConveyorA);
-    ConveyorBButton.pressed(triggerConveyorB);
+    RubberBandPistonButton.released(triggerRubberBandPiston);
+    IntakePistonButton.pressed(triggerRubberBandPiston);
+    IntakePistonButton.released(triggerRubberBandPiston);
 
     while (1) {
         chronos.start();
 
+        // Intake or Spinner buttons pressed respectively
+        switch(IntakeButton.pressing()){
+            case true:
+                MotorIntake.spin(forward, 600, rpm);
+                break;
+            default:
+                MotorIntake.stop();
+                break;
+        }
+        switch(SpinnerButton.pressing()){
+            case true:
+                MotorSpinner.spin(forward, 600, rpm);
+                break;
+            default:
+                MotorSpinner.stop();
+                break;
+        }
+
         int velocityMultiplier = primaryController.Axis2.position() / 100;
         int sidewaysMultiplier = primaryController.Axis1.position() / 100;
 
-        int leftVelocity = velocityMultiplier * bestRPM;
-        int rightVelocity = velocityMultiplier * bestRPM;
+        int leftVelocity = velocityMultiplier * MaximumDirect_RPM;
+        int rightVelocity = velocityMultiplier * MaximumDirect_RPM;
 
         if (velocityMultiplier == 0) {
-            leftVelocity = bestRPM * sidewaysMultiplier;
-            rightVelocity = bestRPM * sidewaysMultiplier;
+            leftVelocity = MaximumDirect_RPM * sidewaysMultiplier;
+            rightVelocity = MaximumDirect_RPM * sidewaysMultiplier;
         } else if (sidewaysMultiplier < 0) {
-            leftVelocity = velocityMultiplier * bestRPM * abs(sidewaysMultiplier);
+            leftVelocity = velocityMultiplier * MaximumDirect_RPM * abs(sidewaysMultiplier);
         } else if (sidewaysMultiplier > 0) {
-            rightVelocity = velocityMultiplier * bestRPM * abs(sidewaysMultiplier);
+            rightVelocity = velocityMultiplier * MaximumDirect_RPM * abs(sidewaysMultiplier);
         }
 
         MotorLeftGroup.spin(forward, leftVelocity, rpm);
