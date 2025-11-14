@@ -5,12 +5,24 @@
 	"cSpell.words": [
 		"Aozora",
 		"chronos",
+		"destore",
+		"setpoints",
 		"threadable",
 		"triggerable",
 		"vexcode"
 	],
 	"files.associations": {
 		"typeinfo": "cpp",
-		"chrono": "cpp"
-	}
+		"chrono": "cpp",
+		"cmath": "cpp",
+		"cstdarg": "cpp",
+		"cstdint": "cpp",
+		"cstdio": "cpp",
+		"cstdlib": "cpp",
+		"ctime": "cpp",
+		"exception": "cpp",
+		"limits": "cpp",
+		"ratio": "cpp",
+		"type_traits": "cpp"
+	},
 }
