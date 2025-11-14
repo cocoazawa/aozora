@@ -46,13 +46,13 @@ void userControl(void) {
     auto triggerConveyorA = []() { trigger(IntakePiston); };
     auto triggerConveyorB = []() { trigger(IntakePiston); };
 
+    RubberBandPistonButton.pressed(triggerRubberBandPiston);
+    IntakePistonButton.pressed(triggerIntakePiston);
+    ConveyorAButton.pressed(triggerConveyorA);
+    ConveyorBButton.pressed(triggerConveyorB);
+
     while (1) {
         chronos.start();
-
-        RubberBandPistonButton.pressed(triggerRubberBandPiston);
-        IntakePistonButton.pressed(triggerIntakePiston);
-        ConveyorAButton.pressed(triggerConveyorA);
-        ConveyorBButton.pressed(triggerConveyorB);
 
         int velocityMultiplier = primaryController.Axis2.position() / 100;
         int sidewaysMultiplier = primaryController.Axis1.position() / 100;
