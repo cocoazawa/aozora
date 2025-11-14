@@ -3,6 +3,7 @@
 // 
 // Written by Peter G.
 
+#pragma once
 #include "vex.h"
 
 using namespace vex;
@@ -11,11 +12,27 @@ using namespace vex;
 brain Brain;
 
 // maximum direct rpm output from the motor
-int MaximumDirect_RPM = 600;
+double MaximumDirectRPM = 600;
+double TravelDistance = 600;
+double AxelWidth = 287.5;
+double TotalCircumference = AxelWidth * M_PI * 2;
 // ratio remapping from the direct output to the actual output (yes, this CAN be simplified; it SHOULD NOT BE SIMPLIFIED)
-int Ratio = 60/36;
+double GearRatio = 36/60;
 // time in the unit of msec
-int ElapseGoalTime = 8;
+double ElapseGoalTime = 8;
+
+
+// Overseer
+double ProportionalMultiplier = 0.0;
+double IntegralMultiplier = 0.0;
+double DerivativeMultiplier = 0.0;
+double OverallMultiplier = 1.0;
+// DO NOT CHANGE THE NAME: IT IS SUPPOSED TO MISMATCH
+// the LOWER BOUNDS for the error DESPITE the name
+double ToleranceUpper = 5.0;
+// the UPPER BOUNDS for the error DESPITE the name
+double ToleranceLower = -5.0;
+
 
 
 // pistons
@@ -40,7 +57,7 @@ motor_group MotorRightGroup = motor_group(MotorRightFront, MotorRightMid, MotorR
 
 // conveyor belts/spinny thing setup
 motor MotorSpinner = motor(PORT4, ratio6_1, true);
-motor MotorIntake = motor(PORT3, ratio6_1, true);
+motor MotorIntake = motor(PORT3, ratio6_1, false);
 
 
 

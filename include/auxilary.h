@@ -3,17 +3,20 @@
 //
 // Written by Peter G.
 
-#include <vex.h>
+#pragma once
+#include "v5.h"
+#include "v5_vcs.h"
 
 using namespace vex;
 
-void trigger(pneumatics& piston) {
-    switch (piston.value()) {
+// trigger digitalOut (mainly pneumatics) from their current state
+void trigger(vex::digital_out &peripheral) {
+    switch (peripheral.value()) {
         case 1:
-            piston.set(false);
+            peripheral.set(false);
             break;
         case 0:
-            piston.set(true);
+            peripheral.set(true);
             break;
         default:
             break;

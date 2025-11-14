@@ -7,6 +7,7 @@
 #include "vex.h"
 #include "chronoAssist.h"
 #include "auxilary.h"
+#include "overseer.h"
 
 using namespace vex;
 
@@ -20,10 +21,13 @@ void preAutonomous(void) {
 }
 
 void autonomous(void) {
+    OverseerBasis overseer;
+
+    overseer.operation(CommandType::Propel, 610);
 }
 
 void userControl(void) {
-    ChronoAssist chronos(1.0);
+    ChronoAssist chronos(ChronoType::MinTime, 1.0);
     
     auto RubberBandPistonButton = primaryController.ButtonX;
     auto IntakePistonButton = primaryController.ButtonB;
@@ -33,6 +37,7 @@ void userControl(void) {
     auto triggerRubberBandPiston = []() { trigger(RubberBandPiston); };
     auto triggerIntakePiston = []() { trigger(IntakePiston); };
 
+    // register 
     RubberBandPistonButton.pressed(triggerRubberBandPiston);
     RubberBandPistonButton.released(triggerRubberBandPiston);
     IntakePistonButton.pressed(triggerRubberBandPiston);
@@ -42,36 +47,40 @@ void userControl(void) {
         chronos.start();
 
         // Intake or Spinner buttons pressed respectively
-        switch(IntakeButton.pressing()){
-            case true:
+        switch (IntakeButton.pressing()) {
+            case true: {
                 MotorIntake.spin(forward, 600, rpm);
                 break;
-            default:
+            }
+            default: {
                 MotorIntake.stop();
                 break;
+            }
         }
-        switch(SpinnerButton.pressing()){
-            case true:
+        switch (SpinnerButton.pressing()) {
+            case true: {
                 MotorSpinner.spin(forward, 600, rpm);
                 break;
-            default:
+            }
+            default: {
                 MotorSpinner.stop();
                 break;
+            }
         }
 
         int velocityMultiplier = primaryController.Axis2.position() / 100;
         int sidewaysMultiplier = primaryController.Axis1.position() / 100;
 
-        int leftVelocity = velocityMultiplier * MaximumDirect_RPM;
-        int rightVelocity = velocityMultiplier * MaximumDirect_RPM;
+        int leftVelocity = velocityMultiplier * MaximumDirectRPM;
+        int rightVelocity = velocityMultiplier * MaximumDirectRPM;
 
         if (velocityMultiplier == 0) {
-            leftVelocity = MaximumDirect_RPM * sidewaysMultiplier;
-            rightVelocity = MaximumDirect_RPM * sidewaysMultiplier;
+            leftVelocity = MaximumDirectRPM * sidewaysMultiplier;
+            rightVelocity = MaximumDirectRPM * sidewaysMultiplier;
         } else if (sidewaysMultiplier < 0) {
-            leftVelocity = velocityMultiplier * MaximumDirect_RPM * abs(sidewaysMultiplier);
+            leftVelocity = velocityMultiplier * MaximumDirectRPM * abs(sidewaysMultiplier);
         } else if (sidewaysMultiplier > 0) {
-            rightVelocity = velocityMultiplier * MaximumDirect_RPM * abs(sidewaysMultiplier);
+            rightVelocity = velocityMultiplier * MaximumDirectRPM * abs(sidewaysMultiplier);
         }
 
         MotorLeftGroup.spin(forward, leftVelocity, rpm);
@@ -86,12 +95,13 @@ void userControl(void) {
 // Main will set up the competition functions and callbacks.
 //
 int main() {
+    // Run the pre-autonomous function.
+    preAutonomous();
+
+
     // Set up callbacks for autonomous and driver control periods.
     Competition.autonomous(autonomous);
     Competition.drivercontrol(userControl);
-
-    // Run the pre-autonomous function.
-    preAutonomous();
 
     // Prevent main from exiting with an infinite loop.
     while (true) {
