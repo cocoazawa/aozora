@@ -8,6 +8,7 @@
 #include "chronoAssist.h"
 #include "auxilary.h"
 #include "overseer.h"
+#include <cmath>
 
 using namespace vex;
 
@@ -27,60 +28,71 @@ void autonomous(void) {
 }
 
 void userControl(void) {
-    ChronoAssist chronos(ChronoType::MinTime, 1.0);
+    ChronoAssist chronos(ChronoType::MinTime, 1.0, 10.0);
     
+    // define buttons and callable functions
     auto RubberBandPistonButton = primaryController.ButtonX;
     auto IntakePistonButton = primaryController.ButtonB;
-    auto IntakeButton = primaryController.ButtonL2;
-    auto SpinnerButton = primaryController.ButtonL1;
-
+    
     auto triggerRubberBandPiston = []() { trigger(RubberBandPiston); };
     auto triggerIntakePiston = []() { trigger(IntakePiston); };
-
+    
     // register 
     RubberBandPistonButton.pressed(triggerRubberBandPiston);
     RubberBandPistonButton.released(triggerRubberBandPiston);
-    IntakePistonButton.pressed(triggerRubberBandPiston);
-    IntakePistonButton.released(triggerRubberBandPiston);
+    IntakePistonButton.pressed(triggerIntakePiston);
+    IntakePistonButton.released(triggerIntakePiston);
+    
+    // define buttons and state variables
+    auto IntakeButton = primaryController.ButtonL2;
+    auto SpinnerButton = primaryController.ButtonL1;
+
+    bool motorIntakeStopped = false;
+    bool motorSpinnerStopped = false;
 
     while (1) {
         chronos.start();
 
         // Intake or Spinner buttons pressed respectively
-        switch (IntakeButton.pressing()) {
-            case true: {
-                MotorIntake.spin(forward, 600, rpm);
-                break;
-            }
-            default: {
+        if (IntakeButton.pressing()) {
+            motorIntakeStopped = false;
+            MotorIntake.spin(forward, 600, rpm);
+        } else {
+            if (motorIntakeStopped != true) {
                 MotorIntake.stop();
-                break;
+                motorIntakeStopped = true;
             }
         }
-        switch (SpinnerButton.pressing()) {
-            case true: {
-                MotorSpinner.spin(forward, 600, rpm);
-                break;
-            }
-            default: {
+
+        if (SpinnerButton.pressing()) {
+            motorSpinnerStopped = false;
+            MotorSpinner.spin(forward, 600, rpm);
+        } else {
+            if (motorSpinnerStopped != true) {
                 MotorSpinner.stop();
-                break;
+                motorSpinnerStopped = true;
             }
         }
 
-        int velocityMultiplier = primaryController.Axis2.position() / 100;
-        int sidewaysMultiplier = primaryController.Axis1.position() / 100;
+        double velocityMultiplier = primaryController.Axis2.position() / 100;
+        double sidewaysMultiplier = primaryController.Axis1.position() / 100;
 
-        int leftVelocity = velocityMultiplier * MaximumDirectRPM;
-        int rightVelocity = velocityMultiplier * MaximumDirectRPM;
+        double leftVelocity = velocityMultiplier * MaximumDirectRPM;
+        double rightVelocity = velocityMultiplier * MaximumDirectRPM;
 
-        if (velocityMultiplier == 0) {
-            leftVelocity = MaximumDirectRPM * sidewaysMultiplier;
-            rightVelocity = MaximumDirectRPM * sidewaysMultiplier;
-        } else if (sidewaysMultiplier < 0) {
-            leftVelocity = velocityMultiplier * MaximumDirectRPM * abs(sidewaysMultiplier);
+        if (sidewaysMultiplier == 0 && velocityMultiplier == 0) {
+            MotorLeftGroup.stop();
+            MotorRightGroup.stop();
+
+            auto endTime = chronos.ending();
+            wait(endTime, msec);
+            continue;
+        }
+        
+        if (sidewaysMultiplier < 0) {
+            leftVelocity = velocityMultiplier * MaximumDirectRPM * std::abs(1.0 - sidewaysMultiplier);
         } else if (sidewaysMultiplier > 0) {
-            rightVelocity = velocityMultiplier * MaximumDirectRPM * abs(sidewaysMultiplier);
+            rightVelocity = velocityMultiplier * MaximumDirectRPM * std::abs(1.0 - sidewaysMultiplier);
         }
 
         MotorLeftGroup.spin(forward, leftVelocity, rpm);

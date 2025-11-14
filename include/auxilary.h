@@ -9,6 +9,15 @@
 
 using namespace vex;
 
+
+// check if the double provided is within the controller value tolerance
+bool withinControllerTolerance(double value) {
+    bool returnValue = (value < (-1 * ControllerTolerance)) && (ControllerTolerance > value);
+    return returnValue;
+}
+
+
+
 // trigger digitalOut (mainly pneumatics) from their current state
 void trigger(vex::digital_out &peripheral) {
     switch (peripheral.value()) {

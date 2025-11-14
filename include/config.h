@@ -29,9 +29,12 @@ double DerivativeMultiplier = 0.0;
 double OverallMultiplier = 1.0;
 // DO NOT CHANGE THE NAME: IT IS SUPPOSED TO MISMATCH
 // the LOWER BOUNDS for the error DESPITE the name
-double ToleranceUpper = 5.0;
+double OverseerToleranceUpper = 5.0;
 // the UPPER BOUNDS for the error DESPITE the name
-double ToleranceLower = -5.0;
+double OverseerToleranceLower = -5.0;
+
+// the LOWER BOUNDS for the driverControl's Controller
+double ControllerTolerance = 0.02;
 
 
 

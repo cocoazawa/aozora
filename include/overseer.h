@@ -36,7 +36,7 @@ class OverseerBasis {
         double SummedError = 0;
         double RateBasedError = 0;
 
-        ChronoAssist chronosLocal = ChronoAssist(Stopwatch, 0.0);
+        ChronoAssist chronosLocal = ChronoAssist(ChronoType::Stopwatch, std::chrono::_V2::system_clock::now());
 
         double getAverageRotation(double doubleA, double doubleB, double doubleC) {
             double averageDoubles = doubleA + doubleB + doubleC;
@@ -135,16 +135,21 @@ class OverseerBasis {
         void runControl() {
             printf("[  RUN   ] Running control in a thread using the class reference until STOP command is issued.");
             while (stopIssue != true) {
+                double command = deriveCommand();
                 switch (commandType) {
                     case CommandType::Pivot: {
-                        // FIXME: Add pivot.
+                        if (setPoint > 0) {
+                            MotorLeftGroup.spin(forward, command, vex::velocityUnits::rpm);
+                            MotorRightGroup.spin(reverse, command, vex::velocityUnits::rpm);
+                        } else {
+                            MotorLeftGroup.spin(reverse, command, vex::velocityUnits::rpm);
+                            MotorRightGroup.spin(forward, command, vex::velocityUnits::rpm);
+                        }
                         break;
                     }
                     case CommandType::Propel: {
-                        double command = deriveCommand();
                         MotorLeftGroup.spin(forward, command, vex::velocityUnits::rpm);
                         MotorRightGroup.spin(forward, command, vex::velocityUnits::rpm);
-
                         break;
                     }
                     default: {
@@ -152,7 +157,7 @@ class OverseerBasis {
                     }
                 }
 
-                if (ToleranceLower <= getRelativeError() || getRelativeError() <= ToleranceUpper) {
+                if (OverseerToleranceLower <= getRelativeError() || getRelativeError() <= OverseerToleranceUpper) {
                     stopIssue = true;
                 }
             }
