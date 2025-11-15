@@ -23,15 +23,14 @@ double ElapseGoalTime = 8;
 
 
 // Overseer
-double ProportionalMultiplier = 0.0;
-double IntegralMultiplier = 0.0;
-double DerivativeMultiplier = 0.0;
-double OverallMultiplier = 1.0;
-// DO NOT CHANGE THE NAME: IT IS SUPPOSED TO MISMATCH
-// the LOWER BOUNDS for the error DESPITE the name
-double OverseerToleranceUpper = 5.0;
-// the UPPER BOUNDS for the error DESPITE the name
-double OverseerToleranceLower = -5.0;
+double ProportionalMultiplier = 0.5;
+double IntegralMultiplier = 0.2;
+double DerivativeMultiplier = 0.5;
+double OverallMultiplier = 0.23;
+// the LOWER BOUNDS for the error
+double OverseerToleranceUpper = 2.0;
+// the UPPER BOUNDS for the error
+double OverseerToleranceLower = -2.0;
 
 // the LOWER BOUNDS for the driverControl's Controller
 double ControllerTolerance = 0.02;
@@ -65,12 +64,14 @@ motor MotorIntake = motor(PORT3, ratio6_1, false);
 
 
 void initializeVEX(void) {
-    MotorLeftFront.setBrake(vex::brakeType::hold);
-    MotorLeftMid.setBrake(vex::brakeType::hold);
-    MotorLeftBack.setBrake(vex::brakeType::hold);
-    MotorRightFront.setBrake(vex::brakeType::hold);
-    MotorRightMid.setBrake(vex::brakeType::hold);
-    MotorRightBack.setBrake(vex::brakeType::hold);
-    MotorSpinner.setBrake(vex::brakeType::hold);
-    MotorIntake.setBrake(vex::brakeType::hold);
+    MotorLeftFront.setBrake(vex::brakeType::brake);
+    MotorLeftMid.setBrake(vex::brakeType::brake);
+    MotorLeftBack.setBrake(vex::brakeType::brake);
+    MotorRightFront.setBrake(vex::brakeType::brake);
+    MotorRightMid.setBrake(vex::brakeType::brake);
+    MotorRightBack.setBrake(vex::brakeType::brake);
+    MotorSpinner.setBrake(vex::brakeType::brake);
+    MotorIntake.setBrake(vex::brakeType::brake);
+
+    Brain.Screen.setOrigin(1, 40);
 }

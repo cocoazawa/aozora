@@ -24,5 +24,6 @@
 		"limits": "cpp",
 		"ratio": "cpp",
 		"type_traits": "cpp"
-	}
+	},
+	"window.zoomLevel": -1
 }

@@ -4,12 +4,12 @@
 		"json": 2
 	},
 	"project": {
-		"name": "aozora",
+		"name": "ProjectAozora",
 		"description": "[DRAFT] for the '26 Game Season. St. Mary's HS Robotics.",
 		"creationDate": "10/23/2025, 6:16:34 PM",
 		"platform": "V5",
 		"language": "cpp",
-		"slot": 8,
+		"slot": 1,
 		"sdkVersion": "V5_20240802_15_00_00",
 		"cpp": {
 			"includePath": [],
