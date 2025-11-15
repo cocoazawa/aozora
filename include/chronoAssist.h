@@ -59,7 +59,7 @@ class ChronoAssist {
         double ending() {
             endPoint = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsedTime = endPoint - startPoint;
-            printf("[  GET   ] ChronosAssist: Elapsed Time %d", elapsedTime.count());
+            // printf("[  GET   ] ChronosAssist: Elapsed Time %d\n", elapsedTime.count());
 
             switch (this->chronoType) {
                 case ChronoType::Stopwatch: {
@@ -70,12 +70,12 @@ class ChronoAssist {
                 case ChronoType::MinTime: {
                     double staleDuration = setPoint - elapsedTime.count();
                     if (staleDuration < minPoint) {
-                        printf("[  GET   ] ChronosAssist: Returning minPoint of %d", minPoint);
-                        printf("[  READ  ] ChronosAssist: staleDuration was %d", staleDuration);
+                        // printf("[  GET   ] ChronosAssist: Returning minPoint of %d\n", minPoint);
+                        // printf("[  READ  ] ChronosAssist: staleDuration was %d\n", staleDuration);
                         return minPoint;
                     }
 
-                    printf("[  GET   ] ChronosAssist: Returning staleDuration of %d and setPoint of %d", staleDuration, setPoint);
+                    // printf("[  GET   ] ChronosAssist: Returning staleDuration of %d and setPoint of %d\n", staleDuration, setPoint);
                     return staleDuration;
                     break;
                 }

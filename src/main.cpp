@@ -19,16 +19,16 @@ controller primaryController = controller();
 
 void preAutonomous(void) {
     initializeVEX();
+    primaryController.rumble("....");
 }
 
 void autonomous(void) {
     OverseerBasis overseer;
-
-    overseer.operation(CommandType::Propel, 610);
+    overseer.operation(CommandType::Propel, 610.0);
 }
 
 void userControl(void) {
-    ChronoAssist chronos(ChronoType::MinTime, 1.0, 10.0);
+    ChronoAssist chronos(ChronoType::MinTime, 1.0, 5.0);
     
     // define buttons and callable functions
     auto RubberBandPistonButton = primaryController.ButtonX;
@@ -39,13 +39,13 @@ void userControl(void) {
     
     // register 
     RubberBandPistonButton.pressed(triggerRubberBandPiston);
-    RubberBandPistonButton.released(triggerRubberBandPiston);
     IntakePistonButton.pressed(triggerIntakePiston);
-    IntakePistonButton.released(triggerIntakePiston);
     
     // define buttons and state variables
-    auto IntakeButton = primaryController.ButtonL2;
-    auto SpinnerButton = primaryController.ButtonL1;
+    auto IntakeButton = primaryController.ButtonL1;
+    auto IntakeCounterspinButton = primaryController.ButtonR1;
+    auto SpinnerButton = primaryController.ButtonL2;
+    auto SpinnerCounterspinButton = primaryController.ButtonR2;
 
     bool motorIntakeStopped = false;
     bool motorSpinnerStopped = false;
@@ -54,9 +54,9 @@ void userControl(void) {
         chronos.start();
 
         // Intake or Spinner buttons pressed respectively
-        if (IntakeButton.pressing()) {
+        if (IntakeButton.pressing() || IntakeCounterspinButton.pressing()) {
             motorIntakeStopped = false;
-            MotorIntake.spin(forward, 600, rpm);
+            MotorIntake.spin(IntakeButton.pressing() ? forward : reverse, 600, rpm);
         } else {
             if (motorIntakeStopped != true) {
                 MotorIntake.stop();
@@ -64,9 +64,9 @@ void userControl(void) {
             }
         }
 
-        if (SpinnerButton.pressing()) {
+        if (SpinnerButton.pressing() || SpinnerCounterspinButton.pressing()) {
             motorSpinnerStopped = false;
-            MotorSpinner.spin(forward, 600, rpm);
+            MotorSpinner.spin(SpinnerButton.pressing() ? forward : reverse, 600, rpm);
         } else {
             if (motorSpinnerStopped != true) {
                 MotorSpinner.stop();
@@ -74,11 +74,8 @@ void userControl(void) {
             }
         }
 
-        double velocityMultiplier = primaryController.Axis2.position() / 100;
-        double sidewaysMultiplier = primaryController.Axis1.position() / 100;
-
-        double leftVelocity = velocityMultiplier * MaximumDirectRPM;
-        double rightVelocity = velocityMultiplier * MaximumDirectRPM;
+        double velocityMultiplier = primaryController.Axis3.value() / 127;
+        double sidewaysMultiplier = primaryController.Axis1.value() / 127;
 
         if (sidewaysMultiplier == 0 && velocityMultiplier == 0) {
             MotorLeftGroup.stop();
@@ -89,15 +86,19 @@ void userControl(void) {
             continue;
         }
         
-        if (sidewaysMultiplier < 0) {
-            leftVelocity = velocityMultiplier * MaximumDirectRPM * std::abs(1.0 - sidewaysMultiplier);
-        } else if (sidewaysMultiplier > 0) {
-            rightVelocity = velocityMultiplier * MaximumDirectRPM * std::abs(1.0 - sidewaysMultiplier);
-        }
+        double leftVelocity = MaximumDirectRPM * (velocityMultiplier + sidewaysMultiplier);
+        double rightVelocity = MaximumDirectRPM * (velocityMultiplier - sidewaysMultiplier);
 
         MotorLeftGroup.spin(forward, leftVelocity, rpm);
         MotorRightGroup.spin(forward, rightVelocity, rpm);
 
+        Brain.Screen.print("MotorLeft POSIT:  ");
+        Brain.Screen.print(MotorLeftGroup.position(rev));
+        Brain.Screen.print("MotorRight POSIT:  ");
+        Brain.Screen.print(MotorRightGroup.position(rev));
+        Brain.Screen.print("                    ");
+        Brain.Screen.setCursor(1, 1);
+        
         auto endTime = chronos.ending();
         wait(endTime, msec);
     }
@@ -107,6 +108,8 @@ void userControl(void) {
 // Main will set up the competition functions and callbacks.
 //
 int main() {
+    printf("\n[>RUNNING] aozora v0.14.8\n");
+
     // Run the pre-autonomous function.
     preAutonomous();
 
@@ -120,3 +123,4 @@ int main() {
         wait(100, msec);
     }
 }
+

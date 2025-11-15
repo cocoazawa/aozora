@@ -10,24 +10,25 @@
 
 
 enum CommandType {
-    Pivot,
-    Propel,
-    Unissued
+    Pivot = 0,
+    Propel = 1,
+    Unissued = 2
 };
 
-enum MotorGroup {
+enum MotorGroupSide {
     Left,
     Right
 };
 
-class OverseerBasis {
-    private:
-        // rotationalTravel in mm
-        bool stopIssue;
 
-        double setPoint = 0;
-        CommandType commandType = Unissued; 
-        
+
+
+
+class OverseerDataProvisioning {
+    private:
+        CommandType CommandTypeActual = Unissued; 
+        double SetPointActual = 0;
+
         double PRE_CurrentError = 0;
         double PRE_SummedError = 0;
         double PRE_RateBasedError = 0;
@@ -36,34 +37,41 @@ class OverseerBasis {
         double SummedError = 0;
         double RateBasedError = 0;
 
+        double Cycles = 0.0;
+
+        controller controllerReference = controller();
+
         ChronoAssist chronosLocal = ChronoAssist(ChronoType::Stopwatch, std::chrono::_V2::system_clock::now());
 
-        double getAverageRotation(double doubleA, double doubleB, double doubleC) {
+        // error calculation
+
+        /// @brief gets the relative error based on setpoint and actual covered
+        double getRelativeError() {
+            return(getSetPointActual() - deriveDisplacement());
+        }
+
+
+
+        // angular displacement derivation
+        double deriveCubicAverage(double doubleA, double doubleB, double doubleC) {
             double averageDoubles = doubleA + doubleB + doubleC;
             averageDoubles = averageDoubles / 3;
             return averageDoubles;
         }
 
-
-        // returns total revolutions as average for a certain side
-        double getRotationalDisplacement(MotorGroup group) {
-            double average;
+        /// @brief gets the rotational displacement of a specified motor group.
+        /// @param group specified motor group based on the `MotorGroupSide` enum
+        /// @return returns the total revolutions of the motor group's side (averaged);
+        double getGroupAngularDisplacement(MotorGroupSide group) {
+            double average = 0.0;
 
             switch(group) {
-                case MotorGroup::Left: {
-                    average = getAverageRotation(
-                        MotorLeftFront.position(vex::rotationUnits::rev),
-                        MotorLeftMid.position(vex::rotationUnits::rev),
-                        MotorLeftBack.position(vex::rotationUnits::rev)
-                    );
+                case MotorGroupSide::Left: {
+                    average = deriveCubicAverage(MotorLeftFront.position(vex::rotationUnits::rev), MotorLeftMid.position(vex::rotationUnits::rev), MotorLeftBack.position(vex::rotationUnits::rev));
                     break;
                 }
-                case MotorGroup::Right: {
-                    average = getAverageRotation(
-                        MotorRightFront.position(vex::rotationUnits::rev),
-                        MotorRightMid.position(vex::rotationUnits::rev),
-                        MotorRightBack.position(vex::rotationUnits::rev)
-                    );
+                case MotorGroupSide::Right: {
+                    average = deriveCubicAverage(MotorRightFront.position(vex::rotationUnits::rev), MotorRightMid.position(vex::rotationUnits::rev), MotorRightBack.position(vex::rotationUnits::rev));
                     break;
                 }
                 default: { break; }
@@ -72,73 +80,133 @@ class OverseerBasis {
             return average;
         }
 
+
+
+
         /// @brief converts the average from each side to the total distance using gear ratios and the wheel's travel
         /// @return the MILLIMETERS of the distance covered for Propel OR the ANGLE the robot is at for Pivot
-        double getTotalCovered() {
+        double deriveDisplacement() {
+            double displacement = 0.0;
+
             // get average
-            double totalRotationalDisplacement = getRotationalDisplacement(MotorGroup::Left) + getRotationalDisplacement(MotorGroup::Right);
+            double totalRotationalDisplacement = getGroupAngularDisplacement(MotorGroupSide::Left) + getGroupAngularDisplacement(MotorGroupSide::Right);
             totalRotationalDisplacement = totalRotationalDisplacement / 2;
 
             // average multiplied by the gear ratio to get actual travel per cent and
-            double totalDistance = totalRotationalDisplacement * GearRatio * TravelDistance;
+            double totalLinearDisplacement = totalRotationalDisplacement * GearRatio * TravelDistance;
 
-            switch (commandType) {
+            
+            switch (CommandTypeActual) {
                 case CommandType::Pivot: {
-                    return totalDistance;
+                    double percentCircumferenceCovered = totalLinearDisplacement / TotalCircumference * 360.0;
+                    displacement = percentCircumferenceCovered;
                     break;
                 }
-
+                
                 case CommandType::Propel: {
-                    double percentCircumferenceCovered = totalDistance / TotalCircumference;
-                    return percentCircumferenceCovered * 360;
+                    displacement = totalLinearDisplacement;
                     break;
                 }
 
-                default: {
-                    return 0.0;
-                    break;
-                }
+                default: { break; }
             }
+
+            return displacement;
         }
 
-        double getRelativeError() {
-            return(setPoint - getTotalCovered());
-        }
 
+        
     public:
-        OverseerBasis() {
-            stopIssue = false;
-            printf("[  STOP  ] STOP command issued via set variable");
+        OverseerDataProvisioning() {}
+
+        void provision(CommandType basedOnCommandType, double basedOnSetPoint) {
+            this->CommandTypeActual = basedOnCommandType;
+            this->SetPointActual = basedOnSetPoint;
         }
 
-        double deriveCommand() {
-            double coveredValue = getTotalCovered();
+        void startChronosStorage() {
+            chronosLocal.storeStart(std::chrono::_V2::system_clock::now());
+        }
 
-            if (commandType == CommandType::Pivot) {
+        // a bunch of protected setters and getters
+        void setSetPointActual(double setPoint) {
+            // printf("[  SETP  ] Changing SetPoint from %d to %d\n", this->SetPointActual, setPoint);
+            this->SetPointActual = setPoint;
+        }
+        double getSetPointActual() {
+            // printf("[  SETP  ] SetPoint is %d\n", this->SetPointActual);
+            return this->SetPointActual;
+        }
+        CommandType getCommandType() {
+            return this->CommandTypeActual;
+        }
+        double getReadableError() {
+            return getRelativeError();
+        }
+
+        /// @brief derives the command based on the PID control loop
+        /// @return returns the command to be issued to the motors
+        double deriveCommand() {
+            double coveredValue = deriveDisplacement();
+    
+            if (CommandTypeActual == CommandType::Pivot) {
                 coveredValue = coveredValue / 360 * TotalCircumference;
             }
             
-            double errorValue = setPoint - coveredValue;
-
+            double errorValue = getSetPointActual() - coveredValue;
+    
             PRE_CurrentError = errorValue;
             PRE_SummedError += errorValue;
-            PRE_RateBasedError = errorValue / chronosLocal.ending();
-
+            if (chronosLocal.ending() == 0) {
+                PRE_RateBasedError = 0;
+            } else {
+                PRE_RateBasedError = errorValue / chronosLocal.ending();
+            }
+            
             CurrentError = ProportionalMultiplier * PRE_CurrentError;
             SummedError = IntegralMultiplier * PRE_SummedError;
             RateBasedError = DerivativeMultiplier * PRE_RateBasedError;
 
-            double command = (OverallMultiplier * (CurrentError + SummedError + RateBasedError));
+            // actual derivation of command
+            double command = OverallMultiplier * (CurrentError + SummedError + RateBasedError);
+
+            controllerReference.Screen.print(command);
+            controllerReference.Screen.print(" AND ");
+            controllerReference.Screen.print(errorValue);
+
+
+            // clamping command
+            if (command > MaximumDirectRPM) command = MaximumDirectRPM;
+            if (command < -MaximumDirectRPM) command = -MaximumDirectRPM;
+
             return command;
         }
+};
 
-        void runControl() {
-            printf("[  RUN   ] Running control in a thread using the class reference until STOP command is issued.");
+
+
+
+
+
+class OverseerBasis {
+    private:
+        bool stopIssue = false;
+
+        OverseerDataProvisioning DataProvisioner;
+
+        /// @brief runs the control loop until stop is issued
+        void startControl() {
+            DataProvisioner.startChronosStorage();
+            ChronoAssist chronosBalancer(ChronoType::MinTime, 1.0, 5.0);
+
             while (stopIssue != true) {
-                double command = deriveCommand();
-                switch (commandType) {
+                chronosBalancer.start();
+
+                double command = DataProvisioner.deriveCommand();
+    
+                switch (DataProvisioner.getCommandType()) {
                     case CommandType::Pivot: {
-                        if (setPoint > 0) {
+                        if (DataProvisioner.getSetPointActual() > 0) {
                             MotorLeftGroup.spin(forward, command, vex::velocityUnits::rpm);
                             MotorRightGroup.spin(reverse, command, vex::velocityUnits::rpm);
                         } else {
@@ -157,32 +225,31 @@ class OverseerBasis {
                     }
                 }
 
-                if (OverseerToleranceLower <= getRelativeError() || getRelativeError() <= OverseerToleranceUpper) {
+                auto endTime = chronosBalancer.ending();
+                wait(endTime, msec);
+                
+
+                if (DataProvisioner.getReadableError() < OverseerToleranceUpper && DataProvisioner.getReadableError() > OverseerToleranceLower) {
                     stopIssue = true;
                 }
             }
         }
 
+    public:
+        OverseerBasis() {
+            // printf("[   GO   ] OverseerBasis instance has been created and is ready to accept commands.\n");
+        }
+
+
         /// @brief Runs the operation until the setpoint has been reached or time outs
         /// @param commandType The type of command to operate
         /// @param setPoint The set point in MILLIMETERS OR in DEGREES depending on the type of the command
         void operation(CommandType commandType, double setPoint) {
-            printf("[  CMD   ] Command of command type %s issued with setpoint of %f.", commandType, setPoint);
-            this->setPoint = setPoint;
-            this->commandType = commandType;
-
-            switch (commandType) {
-                case CommandType::Pivot: {
-                    // FIXME: Add pivot.
-                    break;
-                }
-                case CommandType::Propel: {
-                    runControl();
-                    break;
-                }
-                default: { break; }
-            }
-
+            DataProvisioner.provision(commandType, setPoint);
+            
+            // printf("[  CMD   ] Command of command type %d (0 Pivot, 1 Propel, 2 N/A) issued with setpoint of the following: %d\n", (int) DataProvisioner.getCommandType(), DataProvisioner.getSetPointActual());
+            
+            startControl();
             return;
         }
 };
