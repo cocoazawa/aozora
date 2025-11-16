@@ -19,7 +19,7 @@ controller primaryController = controller();
 
 void preAutonomous(void) {
     initializeVEX();
-    primaryController.rumble("....");
+    primaryController.rumble(".");
 }
 
 void autonomous(void) {
@@ -108,7 +108,7 @@ void userControl(void) {
 // Main will set up the competition functions and callbacks.
 //
 int main() {
-    printf("\n[>RUNNING] aozora v0.14.8\n");
+    printf("\n[>RUNNING] aozora v0.14.9\n");
 
     // Run the pre-autonomous function.
     preAutonomous();
