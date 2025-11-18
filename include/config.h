@@ -11,13 +11,16 @@ using namespace vex;
 // brain setup
 brain Brain;
 
+#define aozoraVersion "v0.16.0\n"
+
+
 // maximum direct rpm output from the motor
 double MaximumDirectRPM = 600;
 double TravelDistance = 600;
 double AxelWidth = 287.5;
 double TotalCircumference = AxelWidth * M_PI * 2;
 // ratio remapping from the direct output to the actual output (yes, this CAN be simplified; it SHOULD NOT BE SIMPLIFIED)
-double GearRatio = 36/60;
+double GearRatio = 36.0 / 60.0;
 // time in the unit of msec
 double ElapseGoalTime = 8;
 
@@ -26,11 +29,11 @@ double ElapseGoalTime = 8;
 double ProportionalMultiplier = 0.5;
 double IntegralMultiplier = 0.2;
 double DerivativeMultiplier = 0.5;
-double OverallMultiplier = 0.23;
+double OverallMultiplier = 0.1;
 // the LOWER BOUNDS for the error
-double OverseerToleranceUpper = 2.0;
+double OverseerToleranceUpper = -5.0;
 // the UPPER BOUNDS for the error
-double OverseerToleranceLower = -2.0;
+double OverseerToleranceLower = 5.0;
 
 // the LOWER BOUNDS for the driverControl's Controller
 double ControllerTolerance = 0.02;

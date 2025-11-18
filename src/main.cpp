@@ -23,7 +23,7 @@ void preAutonomous(void) {
 }
 
 void autonomous(void) {
-    OverseerBasis overseer;
+    OverseerBasis &overseer = OverseerBasis::getInstance();
     overseer.operation(CommandType::Propel, 610.0);
 }
 
@@ -92,12 +92,14 @@ void userControl(void) {
         MotorLeftGroup.spin(forward, leftVelocity, rpm);
         MotorRightGroup.spin(forward, rightVelocity, rpm);
 
-        Brain.Screen.print("MotorLeft POSIT:  ");
+        Brain.Screen.setCursor(6, 1);
+        Brain.Screen.print("MotorLeft POSIT:   ");
         Brain.Screen.print(MotorLeftGroup.position(rev));
+        Brain.Screen.print("                    ");
+        Brain.Screen.setCursor(7, 1);
         Brain.Screen.print("MotorRight POSIT:  ");
         Brain.Screen.print(MotorRightGroup.position(rev));
         Brain.Screen.print("                    ");
-        Brain.Screen.setCursor(1, 1);
         
         auto endTime = chronos.ending();
         wait(endTime, msec);
@@ -108,7 +110,8 @@ void userControl(void) {
 // Main will set up the competition functions and callbacks.
 //
 int main() {
-    printf("\n[>RUNNING] aozora v0.14.9\n");
+    printf("\n[>RUNNING] aozora ");
+    printf(aozoraVersion);
 
     // Run the pre-autonomous function.
     preAutonomous();

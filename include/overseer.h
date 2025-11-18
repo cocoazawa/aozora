@@ -8,13 +8,13 @@
 #include "config.h"
 #include "chronoAssist.h"
 
-
+/// @brief type of Command for Class 2 control
 enum CommandType {
     Pivot = 0,
     Propel = 1,
     Unissued = 2
 };
-
+/// @brief side of the motor group
 enum MotorGroupSide {
     Left,
     Right
@@ -23,7 +23,7 @@ enum MotorGroupSide {
 
 
 
-
+/// @brief Overseer utility data provisioning and processing class
 class OverseerDataProvisioning {
     private:
         CommandType CommandTypeActual = Unissued; 
@@ -39,7 +39,7 @@ class OverseerDataProvisioning {
 
         double Cycles = 0.0;
 
-        controller controllerReference = controller();
+        controller DataProvisioner_controllerReference = controller();
 
         ChronoAssist chronosLocal = ChronoAssist(ChronoType::Stopwatch, std::chrono::_V2::system_clock::now());
 
@@ -91,7 +91,7 @@ class OverseerDataProvisioning {
             // get average
             double totalRotationalDisplacement = getGroupAngularDisplacement(MotorGroupSide::Left) + getGroupAngularDisplacement(MotorGroupSide::Right);
             totalRotationalDisplacement = totalRotationalDisplacement / 2;
-
+            
             // average multiplied by the gear ratio to get actual travel per cent and
             double totalLinearDisplacement = totalRotationalDisplacement * GearRatio * TravelDistance;
 
@@ -99,12 +99,12 @@ class OverseerDataProvisioning {
             switch (CommandTypeActual) {
                 case CommandType::Pivot: {
                     double percentCircumferenceCovered = totalLinearDisplacement / TotalCircumference * 360.0;
-                    displacement = percentCircumferenceCovered;
+                    return percentCircumferenceCovered;
                     break;
                 }
                 
                 case CommandType::Propel: {
-                    displacement = totalLinearDisplacement;
+                    return totalLinearDisplacement;
                     break;
                 }
 
@@ -124,6 +124,7 @@ class OverseerDataProvisioning {
             this->SetPointActual = basedOnSetPoint;
         }
 
+        // chronos store time
         void startChronosStorage() {
             chronosLocal.storeStart(std::chrono::_V2::system_clock::now());
         }
@@ -142,6 +143,25 @@ class OverseerDataProvisioning {
         }
         double getReadableError() {
             return getRelativeError();
+        }
+
+        void resetDrivetrainDatascope() {
+            MotorLeftFront.resetPosition();
+            MotorLeftMid.resetPosition();
+            MotorLeftBack.resetPosition();
+
+            MotorRightFront.resetPosition();
+            MotorRightMid.resetPosition();
+            MotorRightBack.resetPosition();
+        }
+        static void stopDrivetrain() {
+            MotorLeftFront.stop();
+            MotorLeftMid.stop();
+            MotorLeftBack.stop();
+
+            MotorRightFront.stop();
+            MotorRightMid.stop();
+            MotorRightBack.stop();
         }
 
         /// @brief derives the command based on the PID control loop
@@ -170,10 +190,35 @@ class OverseerDataProvisioning {
             // actual derivation of command
             double command = OverallMultiplier * (CurrentError + SummedError + RateBasedError);
 
-            controllerReference.Screen.print(command);
-            controllerReference.Screen.print(" AND ");
-            controllerReference.Screen.print(errorValue);
-
+            Brain.Screen.setCursor(1, 1);
+            Brain.Screen.print("                            Cycles: ");
+            Brain.Screen.print(Cycles);
+            Brain.Screen.print("                    ");
+            Brain.Screen.setCursor(2, 1);
+            Brain.Screen.print("                           Command: ");
+            Brain.Screen.print(command);
+            Brain.Screen.print("                    ");
+            Brain.Screen.setCursor(3, 1);
+            Brain.Screen.print("                       Error Value: ");
+            Brain.Screen.print(getReadableError());
+            Brain.Screen.print("                    ");
+            Brain.Screen.setCursor(4, 1);
+            Brain.Screen.print("        DirectDisplacement Reading: ");
+            Brain.Screen.print(deriveDisplacement());
+            Brain.Screen.print("                    ");
+            Brain.Screen.setCursor(5, 1);
+            Brain.Screen.print("AngularDisplacement Reading (Left): ");
+            Brain.Screen.print(getGroupAngularDisplacement(MotorGroupSide::Left));
+            Brain.Screen.print("                    ");
+            Brain.Screen.setCursor(6, 1);
+            Brain.Screen.print("AngularDisplacement Reading (Rig.): ");
+            Brain.Screen.print(getGroupAngularDisplacement(MotorGroupSide::Right));
+            Brain.Screen.print("                    ");
+            // Brain.Screen.setCursor(7, 1);
+            // Brain.Screen.print("CommandType (0-Piv. 1-Pro. 2-Uni.): ");
+            // Brain.Screen.print((int)CommandTypeActual);afa
+            // Brain.Screen.print("                    ");
+            
 
             // clamping command
             if (command > MaximumDirectRPM) command = MaximumDirectRPM;
@@ -186,8 +231,7 @@ class OverseerDataProvisioning {
 
 
 
-
-
+/// @brief Overseer main access class
 class OverseerBasis {
     private:
         bool stopIssue = false;
@@ -196,8 +240,13 @@ class OverseerBasis {
 
         /// @brief runs the control loop until stop is issued
         void startControl() {
-            DataProvisioner.startChronosStorage();
+            // reset the drivetrain's position values
+            DataProvisioner.resetDrivetrainDatascope();
+            // only for keeping a minimum time of the loop
             ChronoAssist chronosBalancer(ChronoType::MinTime, 1.0, 5.0);
+
+            // start the time before the loop starts
+            DataProvisioner.startChronosStorage();
 
             while (stopIssue != true) {
                 chronosBalancer.start();
@@ -215,45 +264,72 @@ class OverseerBasis {
                         }
                         break;
                     }
+
                     case CommandType::Propel: {
                         MotorLeftGroup.spin(forward, command, vex::velocityUnits::rpm);
                         MotorRightGroup.spin(forward, command, vex::velocityUnits::rpm);
                         break;
                     }
-                    default: {
-                        break;
-                    }
+
+                    default: { break; }
                 }
 
+                // issue a stop when the error is below the threshold
+                if (DataProvisioner.getReadableError() < OverseerToleranceUpper && DataProvisioner.getReadableError() > OverseerToleranceLower) {
+                    issueStop();
+                }
+                
+                // stop the timekeeper when the program is over
                 auto endTime = chronosBalancer.ending();
                 wait(endTime, msec);
-                
-
-                if (DataProvisioner.getReadableError() < OverseerToleranceUpper && DataProvisioner.getReadableError() > OverseerToleranceLower) {
-                    stopIssue = true;
-                }
             }
         }
 
-    public:
+        
         OverseerBasis() {
-            // printf("[   GO   ] OverseerBasis instance has been created and is ready to accept commands.\n");
+            printf("[OVERSEER] OverseerBasis instance created.\n");
+        }
+        
+        OverseerBasis(OverseerBasis const&);
+        void operator=(OverseerBasis const&);
+        
+    public:
+        /// @brief gets the singleton instance of the OverseerBasis class
+        static OverseerBasis& getInstance() {
+            static OverseerBasis instance;
+            return instance;
         }
 
-
+        /// @brief issue a stop to the overseer control function as well as stopping the drivetrain of any commands.
+        void issueStop() {
+            stopIssue = true;
+            OverseerDataProvisioning::stopDrivetrain();
+        }
+        
         /// @brief Runs the operation until the setpoint has been reached or time outs
         /// @param commandType The type of command to operate
         /// @param setPoint The set point in MILLIMETERS OR in DEGREES depending on the type of the command
         void operation(CommandType commandType, double setPoint) {
+            vex::thread emergencyStopThreadCallback = thread(EmergencyStopThread);
+            
             DataProvisioner.provision(commandType, setPoint);
             
-            // printf("[  CMD   ] Command of command type %d (0 Pivot, 1 Propel, 2 N/A) issued with setpoint of the following: %d\n", (int) DataProvisioner.getCommandType(), DataProvisioner.getSetPointActual());
-            
             startControl();
+
             return;
         }
 };
 
 
-
-
+/// @brief
+/// emergency stop using down and up buttons pressed together
+/// also allows for thread-detached running
+void EmergencyStopThread() {
+    OverseerBasis &overseerLocal = OverseerBasis::getInstance();
+    while(true) {
+        if (primaryController.ButtonDown.pressing() && primaryController.ButtonUp.pressing()) {
+            overseerLocal.issueStop();
+        }
+        vex::this_thread::sleep_for(10);
+    }
+}
