@@ -321,9 +321,7 @@ class OverseerBasis {
 };
 
 
-/// @brief
-/// emergency stop using down and up buttons pressed together
-/// also allows for thread-detached running
+/// @brief emergency stop using down and up buttons pressed together. also allows for thread-detached running.
 void EmergencyStopThread() {
     OverseerBasis &overseerLocal = OverseerBasis::getInstance();
     while(true) {
