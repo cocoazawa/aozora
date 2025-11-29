@@ -234,7 +234,7 @@ class OverseerBasis {
 
 
         /// @brief determines if the stop conditions have been reached
-        /// @return if the autonomous control should halt immediately or not
+        /// @return a boolean value of true if the autonomous control should halt immediately or not
         bool stopConditionReached() {
             bool stopping = false;
             
