@@ -12,9 +12,8 @@
 
 using namespace vex;
 
-// introduce competition and controller objects
+// introduce competition objects
 competition Competition;
-controller primaryController = controller();
 
 
 void preAutonomous(void) {
@@ -93,7 +92,7 @@ void userControl(void) {
         MotorRightGroup.spin(forward, rightVelocity, rpm);
 
         Brain.Screen.setCursor(6, 1);
-        Brain.Screen.print("MotorLeft POSIT:   ");
+        Brain.Screen.print("MotorLeft POSIT: ");
         Brain.Screen.print(MotorLeftGroup.position(rev));
         Brain.Screen.print("                    ");
         Brain.Screen.setCursor(7, 1);

@@ -11,7 +11,7 @@ using namespace vex;
 // brain setup
 brain Brain;
 
-#define aozoraVersion "v0.16.0\n"
+#define aozoraVersion "v0.16.2\n"
 
 
 // maximum direct rpm output from the motor
@@ -48,21 +48,30 @@ pneumatics IntakePiston(IntakePistonPort);
 
 
 // drivetrain setup
-motor MotorLeftFront = motor(PORT5, ratio6_1, false);
-motor MotorLeftMid = motor(PORT6, ratio6_1, false);
-motor MotorLeftBack = motor(PORT7, ratio6_1, true);
+motor MotorLeftFront(PORT5, ratio6_1, false);
+motor MotorLeftMid(PORT6, ratio6_1, false);
+motor MotorLeftBack(PORT7, ratio6_1, true);
 
-motor MotorRightFront = motor(PORT8, ratio6_1, true);
-motor MotorRightMid = motor(PORT9, ratio6_1, true);
-motor MotorRightBack = motor(PORT10, ratio6_1, false);
+motor MotorRightFront(PORT8, ratio6_1, true);
+motor MotorRightMid(PORT9, ratio6_1, true);
+motor MotorRightBack(PORT10, ratio6_1, false);
 
-motor_group MotorLeftGroup = motor_group(MotorLeftFront, MotorLeftMid, MotorLeftBack);
-motor_group MotorRightGroup = motor_group(MotorRightFront, MotorRightMid, MotorRightBack);
+motor_group MotorLeftGroup(MotorLeftFront, MotorLeftMid, MotorLeftBack);
+motor_group MotorRightGroup(MotorRightFront, MotorRightMid, MotorRightBack);
 
 
 // conveyor belts/spinny thing setup
-motor MotorSpinner = motor(PORT4, ratio6_1, true);
-motor MotorIntake = motor(PORT3, ratio6_1, false);
+motor MotorSpinner(PORT4, ratio6_1, true);
+motor MotorIntake(PORT3, ratio6_1, false);
+
+
+// introduce controller object (moved to allow for uniform access to one reference)
+controller primaryController = controller();
+
+
+// gyroscope object
+// introduced from aozora v0.16.1 for testing applications
+inertial primaryInertial(PORT11);
 
 
 

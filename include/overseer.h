@@ -39,8 +39,6 @@ class OverseerDataProvisioning {
 
         double Cycles = 0.0;
 
-        controller DataProvisioner_controllerReference = controller();
-
         ChronoAssist chronosLocal = ChronoAssist(ChronoType::Stopwatch, std::chrono::_V2::system_clock::now());
 
         // error calculation
@@ -214,10 +212,6 @@ class OverseerDataProvisioning {
             Brain.Screen.print("AngularDisplacement Reading (Rig.): ");
             Brain.Screen.print(getGroupAngularDisplacement(MotorGroupSide::Right));
             Brain.Screen.print("                    ");
-            // Brain.Screen.setCursor(7, 1);
-            // Brain.Screen.print("CommandType (0-Piv. 1-Pro. 2-Uni.): ");
-            // Brain.Screen.print((int)CommandTypeActual);afa
-            // Brain.Screen.print("                    ");
             
 
             // clamping command
@@ -237,6 +231,22 @@ class OverseerBasis {
         bool stopIssue = false;
 
         OverseerDataProvisioning DataProvisioner;
+
+
+        /// @brief determines if the stop conditions have been reached
+        /// @return if the autonomous control should halt immediately or not
+        bool stopConditionReached() {
+            bool stopping = false;
+            
+            // error is within boundaries
+            if (DataProvisioner.getReadableError() < OverseerToleranceUpper && DataProvisioner.getReadableError() > OverseerToleranceLower) { stopping = true; }
+            
+            // emergency stop is being issued
+            if (primaryController.ButtonDown.pressing() && primaryController.ButtonUp.pressing()) { stopping = true; }
+
+            return stopping;
+        }
+
 
         /// @brief runs the control loop until stop is issued
         void startControl() {
@@ -274,8 +284,9 @@ class OverseerBasis {
                     default: { break; }
                 }
 
+
                 // issue a stop when the error is below the threshold
-                if (DataProvisioner.getReadableError() < OverseerToleranceUpper && DataProvisioner.getReadableError() > OverseerToleranceLower) {
+                if (stopConditionReached()) {
                     issueStop();
                 }
                 
@@ -310,8 +321,6 @@ class OverseerBasis {
         /// @param commandType The type of command to operate
         /// @param setPoint The set point in MILLIMETERS OR in DEGREES depending on the type of the command
         void operation(CommandType commandType, double setPoint) {
-            vex::thread emergencyStopThreadCallback = thread(EmergencyStopThread);
-            
             DataProvisioner.provision(commandType, setPoint);
             
             startControl();
@@ -319,15 +328,3 @@ class OverseerBasis {
             return;
         }
 };
-
-
-/// @brief emergency stop using down and up buttons pressed together. also allows for thread-detached running.
-void EmergencyStopThread() {
-    OverseerBasis &overseerLocal = OverseerBasis::getInstance();
-    while(true) {
-        if (primaryController.ButtonDown.pressing() && primaryController.ButtonUp.pressing()) {
-            overseerLocal.issueStop();
-        }
-        vex::this_thread::sleep_for(10);
-    }
-}

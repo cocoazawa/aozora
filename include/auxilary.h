@@ -7,10 +7,12 @@
 #include "v5.h"
 #include "v5_vcs.h"
 
+
 using namespace vex;
 
 
-// check if the double provided is within the controller value tolerance
+/// @brief check if the double provided is within the controller value tolerance.
+/// this may be outdated depending on the version of this repository.
 bool withinControllerTolerance(double value) {
     bool returnValue = (value < (-1 * ControllerTolerance)) && (ControllerTolerance > value);
     return returnValue;
@@ -18,7 +20,7 @@ bool withinControllerTolerance(double value) {
 
 
 
-// trigger digitalOut (mainly pneumatics) from their current state
+/// @brief trigger digitalOut (mainly pneumatics) from their current state
 void trigger(vex::digital_out &peripheral) {
     switch (peripheral.value()) {
         case 1:
@@ -31,3 +33,17 @@ void trigger(vex::digital_out &peripheral) {
             break;
     }
 }
+
+
+
+/// @brief emergency stop using down and up buttons pressed together. also allows for thread-detached running.
+// void EmergencyStopThread() {
+//     OverseerBasis &overseerLocal = OverseerBasis::getInstance();
+    
+//     while(true) {
+//         if (primaryController.ButtonDown.pressing() && primaryController.ButtonUp.pressing()) {
+//             overseerLocal.issueStop();
+//         }
+//         vex::this_thread::sleep_for(10);
+//     }
+// }
