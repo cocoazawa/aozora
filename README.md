@@ -1,9 +1,9 @@
 # aozora
 
-Aozora or 青空, the word for "blue sky" in Japanese. Project Aozora aims to be a fully sufficient program for the control of the robot in the '26 V5RC Push Back Game Season.
+Aozora or 青空, the word for "blue sky" in Japanese. Project Aozora aims to be a fully sufficient program for the control of the robot in the '26 V5RC Push Back Game Season ("Game Season").
 
-Copyright (C) 2025 Project Aozora Collaborators. All rights reserved.
-This code is specially licensed to VEX V5 Team 76371A/B/C for the game season. They are only allowed to distribute the code internally, within members of the team, archive the code, learn from the code, or use the code in competitions.
+Copyright (C) 2025 Project Aozora Collaborators. All rights reserved.  
+The contents of this repository is hereby referred to as the "Code" and is specially licensed to VEX V5 Team 76371M/B/C (the "Team") for the Game Season. The Team is only allowed to distribute the code internally, within members of the Team. Members of the Team may also store this code locally on their machine with no intent to distribute outside of the Team, learn from the Code, or use the Code in competitions.
 
 ## About
 
