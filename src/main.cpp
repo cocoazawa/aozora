@@ -111,6 +111,7 @@ void userControl(void) {
 int main() {
     printf("\n[>RUNNING] aozora ");
     printf(aozoraVersion);
+    printf("\n by Aozora Collaborators for team 76371A/B/C.");
 
     // Run the pre-autonomous function.
     preAutonomous();
