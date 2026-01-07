@@ -24,39 +24,55 @@ class Timekeeper {
         TimekeepingType timekeepingType;
     
     public:
-        // constructor, sets minPoint
-        Timekeeper(TimekeepingType timekeepingType, double minPoint, double setPoint) {
-            timekeepingType = timekeepingType;
+        /// @brief constructor with minimum time and set time (the time we want to reach) for differential calculation
+        /// @param timekeepingType timekeeping type
+        /// @param minPoint minimum time we should rest for
+        /// @param setPoint the time we are trying to rest for. calculations will be based off of this
+        Timekeeper(TimekeepingType givenTimekeepingType, double minPoint, double setPoint) {
+            timekeepingType = givenTimekeepingType;
             minPoint = minPoint;
             setPoint = setPoint;
         }
 
-        // for supplying the start time for use in calculations
-        Timekeeper(TimekeepingType timekeepingType, std::chrono::_V2::system_clock::time_point startTimeSupplied) {
-            timekeepingType = timekeepingType;
+        /// @brief constructor for supplying the start time for use in calculations
+        /// @param timekeepingType timekeeping type
+        /// @param startTimeSupplied start point (usually for stopwatches)
+        Timekeeper(TimekeepingType givenTimekeepingType, std::chrono::_V2::system_clock::time_point startTimeSupplied) {
+            timekeepingType = givenTimekeepingType;
             startPoint = startTimeSupplied;
         }
 
+        /// @brief WARN: constructor for creating a timekeeper without time values
+        Timekeeper(TimekeepingType givenTimekeepingType) {
+            timekeepingType = givenTimekeepingType;
+        }
+
+        /// @brief gets the start time stored locally
+        /// @return start time
         std::chrono::system_clock::time_point getStartPoint() {
             return startPoint;
         }
         
-        // sets start time
+        /// @brief start the timer or stopwatch without an arbitrary time (using current time)
         void start() {
             if (storedStart == true) { return; }
             startPoint = std::chrono::system_clock::now();
         }
 
+        /// @brief store an arbitrary time to use as the starting point
+        /// @param timeToStore arbitrary time
         void storeStart(std::chrono::_V2::system_clock::time_point timeToStore) {
             storedStart = true;
             startPoint = std::chrono::system_clock::now();
         }
 
+        /// @brief unlock the stored time variable
         void destoreStart() {
             storedStart = false;
         }
         
-        // sets end time, calculates elapsed, and (if needed) final stop time for the return
+        /// @brief tells the timekeeper to lapse or stop the timing here
+        /// @return final time to stop for (MinTime) OR the elapsed time since given start time (Stopwatch)
         double ending() {
             endPoint = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsedTime = endPoint - startPoint;

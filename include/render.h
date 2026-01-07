@@ -12,34 +12,17 @@ using namespace vex;
 
 
 void refreshCompetitionStatus() {
-    while(true) {
-        primaryBrain.Screen.setFont(mono15);
-        if (Competition.isAutonomous()) {
-            primaryBrain.Screen.printAt(20 + adjustHorizontal, 205 + adjustVertical, true, "STAT_AUTONOMOUS      ");
-        } else if (Competition.isDriverControl()) {
-            primaryBrain.Screen.printAt(20 + adjustHorizontal, 205 + adjustVertical, true, "STAT_DRIVER_CONTROL  ");
-        } else if (Competition.isFieldControl()) {
-            primaryBrain.Screen.printAt(20 + adjustHorizontal, 205 + adjustVertical, true, "STAT_STANDBY         ");
-        } else {
-            primaryBrain.Screen.printAt(20 + adjustHorizontal, 205 + adjustVertical, true, "STAT_NOT_ENTERED     ");
-        }
-        
-        // Brain.Screen.printAt(20 + adjustHorizontal, 225 + adjustVertical, true, "X %f, Y %f, Z %f", Tracker::positionAxis(xaxis), Tracker::positionAxis(yaxis), Tracker::positionAxis(zaxis));
-        vex::this_thread::sleep_for(100);
-    }
-}
-
-
-void refreshCompetitionStatus() {
     int count = 0;
 
+    vex::brain::lcd screenRef = primaryBrain.Screen;
+
+    Timekeeper timekeeper(TimekeepingType::MinTime, 0.0, 100.0);
+
     while (true) {
-        // Evaluate the need to rerender and consume more resources
-        
+        timekeeper.start();
 
-        // Proceed with rerender
-        vex::brain::lcd screenRef = primaryBrain.Screen;
-
+        // printing title banner
+        screenRef.setOrigin(0, 0);
         screenRef.setFillColor(color(transparent));
         screenRef.setPenColor("#FFFFFF");
         screenRef.setFont(mono40);
@@ -65,32 +48,61 @@ void refreshCompetitionStatus() {
         screenRef.printAt(20 + adjustHorizontal, 100 + adjustVertical, true, "76371B [St. Mary's]");
         screenRef.setFillColor(color(transparent));
         
+
+        // actual logging and other detailed information
         screenRef.setFont(mono15);
+        Reporter::UpdateReport();
+
+        screenRef.setOrigin(20 + adjustHorizontal, 125 + adjustVertical);
+        screenRef.setCursor(1, 1);
+        screenRef.print(" Running Environment (auto detect): ");
+        if (Competition.isAutonomous()) {
+            screenRef.print("Autonomous");
+        } else if (Competition.isDriverControl()) {
+            screenRef.print("Driver Control");
+        } else if (Competition.isFieldControl()) {
+            screenRef.print("Standing By");
+        } else {
+            screenRef.print("Non-competition");
+        }
+        screenRef.print("                    ");
+
+
+        screenRef.setCursor(2, 1);
+        screenRef.print("                 Installed Version: ");
         if (aozoraExperimental) {
-            screenRef.printAt(20 + adjustHorizontal, 125 + adjustVertical, true, "Experimental version installed - Version %s.", aozoraVersion);
-            screenRef.printAt(450, 230, true, "%d", count);
+            screenRef.print("^ex Version ");
         } else {
-            screenRef.printAt(20 + adjustHorizontal, 125 + adjustVertical, true, "Stable version installed - Version %s.", aozoraVersion);
+            screenRef.print("Stable Version ");
         }
+        screenRef.print(aozoraVersion);
+        screenRef.print("                    ");
 
-        if (shared.lastEvaluation.inertialConnected && shared.lastEvaluation.inertialCalibrating) {
-            screenRef.printAt(20 + adjustHorizontal, 145 + adjustVertical, true, "Inertial sensor connected and calibrating...");
-        } else if (shared.lastEvaluation.inertialConnected && !shared.lastEvaluation.inertialCalibrating) {
-            screenRef.printAt(20 + adjustHorizontal, 145 + adjustVertical, true, "Inertial sensor connected and calibrated.   ");
+        screenRef.setCursor(3, 1);
+        screenRef.print("                   Inertial Sensor: ");
+        if (Reporter::report.inertialConnected && Reporter::report.inertialCalibrating) {
+            screenRef.print("Calibrating...");
+        } else if (Reporter::report.inertialConnected && !Reporter::report.inertialCalibrating) {
+            screenRef.print("Performing");
         } else {
-            screenRef.printAt(20 + adjustHorizontal, 145 + adjustVertical, true, "Inertial sensor disconnected.                ");
+            screenRef.print("Disconnected");
         }
+        screenRef.print("                    ");
 
-        screenRef.printAt(20 + adjustHorizontal, 165 + adjustVertical, true, "Battery at %.0f%%, %.0f°C, %.3f amps, %.2f volts.    ", shared.lastEvaluation.batteryPercentage, shared.lastEvaluation.batteryTemperature, shared.lastEvaluation.batteryCurrent, shared.lastEvaluation.batteryVoltage);
+        screenRef.setCursor(4, 1);
+        screenRef.print("                  Battery Readings: ");
+        screenRef.print("%.0f%%, %.0f°C, %.3f amps, %.2f volts.    ", Reporter::report.batteryPercentage, Reporter::report.batteryTemperature, Reporter::report.batteryCurrent, Reporter::report.batteryVoltage);
+        screenRef.print("                    ");
 
-        if (shared.lastEvaluation.allMotorsConnected) {
-            screenRef.printAt(20 + adjustHorizontal, 185 + adjustVertical, true, "All specified motors (8) successfully connected.       ");
+        screenRef.setCursor(5, 1);
+        screenRef.print("                            Motors: ");
+        if (Reporter::report.allMotorsConnected) {
+            screenRef.print("Performing (8)");
         } else {
-            screenRef.printAt(20 + adjustHorizontal, 185 + adjustVertical, true, "Some or none of the specified motors (8) are connected.");
+            screenRef.print("Connection issues (?)");
         }
+        screenRef.print("                    ");
 
-        vex::this_thread::sleep_for(100);
+        vex::this_thread::sleep_for(timekeeper.ending());
     }
-
-    return 0;
 }

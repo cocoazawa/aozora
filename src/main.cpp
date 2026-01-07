@@ -17,9 +17,6 @@ using namespace vex;
 void preAutonomous(void) {
     initializeVEX();
     primaryController.rumble(".");
-
-    vex::thread statusRenderThread = thread( continuousRenderStatus );
-    vex::thread competitionStatusRenderThread = thread( refreshCompetitionStatus );
 }
 
 void autonomous(void) {
@@ -28,6 +25,9 @@ void autonomous(void) {
 }
 
 void userControl(void) {
+    // Hold off on rendering an official interface
+    vex::thread interfaceThread = thread( refreshCompetitionStatus );
+
     Timekeeper chronos(TimekeepingType::MinTime, 0.0, 5.0);
     
     // define buttons and callable functions
