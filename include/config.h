@@ -11,7 +11,7 @@ using namespace vex;
 // brain setup
 brain Brain;
 
-#define aozoraVersion "v0.16.2\n"
+#define aozoraVersion "v0.16.12\n"
 
 
 // maximum direct rpm output from the motor

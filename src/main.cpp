@@ -27,7 +27,7 @@ void autonomous(void) {
 }
 
 void userControl(void) {
-    ChronoAssist chronos(ChronoType::MinTime, 1.0, 5.0);
+    ChronoAssist chronos(ChronoType::MinTime, 0.0, 5.0);
     
     // define buttons and callable functions
     auto RubberBandPistonButton = primaryController.ButtonX;
@@ -73,20 +73,22 @@ void userControl(void) {
             }
         }
 
-        double velocityMultiplier = primaryController.Axis3.value() / 127;
-        double sidewaysMultiplier = primaryController.Axis1.value() / 127;
-
+        float velocityMultiplierTotal = 127;
+        float sidewaysMultiplierTotal = 254;
+        float velocityMultiplier = primaryController.Axis3.value() / velocityMultiplierTotal;
+        float sidewaysMultiplier = primaryController.Axis1.value() / sidewaysMultiplierTotal;
+        
         if (sidewaysMultiplier == 0 && velocityMultiplier == 0) {
             MotorLeftGroup.stop();
             MotorRightGroup.stop();
-
+            
             auto endTime = chronos.ending();
             wait(endTime, msec);
             continue;
         }
         
-        double leftVelocity = MaximumDirectRPM * (velocityMultiplier + sidewaysMultiplier);
-        double rightVelocity = MaximumDirectRPM * (velocityMultiplier - sidewaysMultiplier);
+        long leftVelocity = MaximumDirectRPM * (velocityMultiplier + sidewaysMultiplier);
+        long rightVelocity = MaximumDirectRPM * (velocityMultiplier - sidewaysMultiplier);
 
         MotorLeftGroup.spin(forward, leftVelocity, rpm);
         MotorRightGroup.spin(forward, rightVelocity, rpm);
