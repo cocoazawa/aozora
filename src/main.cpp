@@ -8,17 +8,18 @@
 #include "timekeeper.h"
 #include "auxilary.h"
 #include "overseer.h"
+#include "render.h"
 #include <cmath>
 
 using namespace vex;
-
-// introduce competition objects
-competition Competition;
 
 
 void preAutonomous(void) {
     initializeVEX();
     primaryController.rumble(".");
+
+    vex::thread statusRenderThread = thread( continuousRenderStatus );
+    vex::thread competitionStatusRenderThread = thread( refreshCompetitionStatus );
 }
 
 void autonomous(void) {
@@ -93,14 +94,14 @@ void userControl(void) {
         MotorLeftGroup.spin(forward, leftVelocity, rpm);
         MotorRightGroup.spin(forward, rightVelocity, rpm);
 
-        Brain.Screen.setCursor(6, 1);
-        Brain.Screen.print("MotorLeft POSIT: ");
-        Brain.Screen.print(MotorLeftGroup.position(rev));
-        Brain.Screen.print("                    ");
-        Brain.Screen.setCursor(7, 1);
-        Brain.Screen.print("MotorRight POSIT:  ");
-        Brain.Screen.print(MotorRightGroup.position(rev));
-        Brain.Screen.print("                    ");
+        primaryBrain.Screen.setCursor(6, 1);
+        primaryBrain.Screen.print("MotorLeft POSIT: ");
+        primaryBrain.Screen.print(MotorLeftGroup.position(rev));
+        primaryBrain.Screen.print("                    ");
+        primaryBrain.Screen.setCursor(7, 1);
+        primaryBrain.Screen.print("MotorRight POSIT:  ");
+        primaryBrain.Screen.print(MotorRightGroup.position(rev));
+        primaryBrain.Screen.print("                    ");
         
         auto endTime = chronos.ending();
         wait(endTime, msec);

@@ -22,7 +22,6 @@ enum MotorGroupSide {
 
 
 
-
 /// @brief Overseer utility data provisioning and processing class
 class OverseerDataProvisioning {
     private:
@@ -188,30 +187,30 @@ class OverseerDataProvisioning {
             // actual derivation of command
             double command = OverallMultiplier * (CurrentError + SummedError + RateBasedError);
 
-            Brain.Screen.setCursor(1, 1);
-            Brain.Screen.print("                            Cycles: ");
-            Brain.Screen.print(Cycles);
-            Brain.Screen.print("                    ");
-            Brain.Screen.setCursor(2, 1);
-            Brain.Screen.print("                           Command: ");
-            Brain.Screen.print(command);
-            Brain.Screen.print("                    ");
-            Brain.Screen.setCursor(3, 1);
-            Brain.Screen.print("                       Error Value: ");
-            Brain.Screen.print(getReadableError());
-            Brain.Screen.print("                    ");
-            Brain.Screen.setCursor(4, 1);
-            Brain.Screen.print("        DirectDisplacement Reading: ");
-            Brain.Screen.print(deriveDisplacement());
-            Brain.Screen.print("                    ");
-            Brain.Screen.setCursor(5, 1);
-            Brain.Screen.print("AngularDisplacement Reading (Left): ");
-            Brain.Screen.print(getGroupAngularDisplacement(MotorGroupSide::Left));
-            Brain.Screen.print("                    ");
-            Brain.Screen.setCursor(6, 1);
-            Brain.Screen.print("AngularDisplacement Reading (Rig.): ");
-            Brain.Screen.print(getGroupAngularDisplacement(MotorGroupSide::Right));
-            Brain.Screen.print("                    ");
+            primaryBrain.Screen.setCursor(1, 1);
+            primaryBrain.Screen.print("                            Cycles: ");
+            primaryBrain.Screen.print(Cycles);
+            primaryBrain.Screen.print("                    ");
+            primaryBrain.Screen.setCursor(2, 1);
+            primaryBrain.Screen.print("                           Command: ");
+            primaryBrain.Screen.print(command);
+            primaryBrain.Screen.print("                    ");
+            primaryBrain.Screen.setCursor(3, 1);
+            primaryBrain.Screen.print("                       Error Value: ");
+            primaryBrain.Screen.print(getReadableError());
+            primaryBrain.Screen.print("                    ");
+            primaryBrain.Screen.setCursor(4, 1);
+            primaryBrain.Screen.print("        DirectDisplacement Reading: ");
+            primaryBrain.Screen.print(deriveDisplacement());
+            primaryBrain.Screen.print("                    ");
+            primaryBrain.Screen.setCursor(5, 1);
+            primaryBrain.Screen.print("AngularDisplacement Reading (Left): ");
+            primaryBrain.Screen.print(getGroupAngularDisplacement(MotorGroupSide::Left));
+            primaryBrain.Screen.print("                    ");
+            primaryBrain.Screen.setCursor(6, 1);
+            primaryBrain.Screen.print("AngularDisplacement Reading (Rig.): ");
+            primaryBrain.Screen.print(getGroupAngularDisplacement(MotorGroupSide::Right));
+            primaryBrain.Screen.print("                    ");
             
 
             // clamping command
