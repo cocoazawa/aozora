@@ -3,14 +3,17 @@
 		"${config:vexrobotics.vexcode.Cpp.Sdk.Home}/V5/V5_20240802_15_00_00/vexv5/gcc/include/sys"
 	],
 	"cSpell.words": [
-		"Aozora",
-		"chronos",
-		"destore",
-		"setpoints",
-		"threadable",
-		"triggerable",
-		"vexcode"
-	],
+        "Aozora",
+        "chronos",
+        "destore",
+        "setpoints",
+        "threadable",
+        "triggerable",
+        "vexcode",
+        "xaxis",
+        "yaxis",
+        "zaxis"
+    ],
 	"files.associations": {
 		"typeinfo": "cpp",
 		"chrono": "cpp",

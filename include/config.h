@@ -1,4 +1,4 @@
-// robot-config.h
+// config.h
 // Copyright (C) 2025 Project Aozora Collaborators
 // 
 // Written by Peter G.
@@ -9,9 +9,22 @@
 using namespace vex;
 
 // brain setup
-brain Brain;
+brain primaryBrain;
+
+// introduce competition objects
+competition Competition;
+
 
 #define aozoraVersion "v0.16.14\n"
+#define aozoraExperimental true
+
+// #define aozoraColor red
+#define aozoraTeamColor blue
+
+static const int adjustHorizontal = -10;
+static const int adjustVertical = -15;
+
+
 
 
 // maximum direct rpm output from the motor
@@ -41,8 +54,8 @@ double ControllerTolerance = 0.02;
 
 
 // pistons
-vex::triport::port RubberBandPistonPort = Brain.ThreeWirePort.B;
-vex::triport::port IntakePistonPort = Brain.ThreeWirePort.A;
+vex::triport::port RubberBandPistonPort = primaryBrain.ThreeWirePort.B;
+vex::triport::port IntakePistonPort = primaryBrain.ThreeWirePort.A;
 pneumatics RubberBandPiston(RubberBandPistonPort);
 pneumatics IntakePiston(IntakePistonPort);
 
@@ -85,5 +98,5 @@ void initializeVEX(void) {
     MotorSpinner.setBrake(vex::brakeType::brake);
     MotorIntake.setBrake(vex::brakeType::brake);
 
-    Brain.Screen.setOrigin(1, 40);
+    primaryBrain.Screen.setOrigin(1, 40);
 }
