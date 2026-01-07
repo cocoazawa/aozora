@@ -5,7 +5,7 @@
 
 #include "config.h"
 #include "vex.h"
-#include "chronoAssist.h"
+#include "timekeeper.h"
 #include "auxilary.h"
 #include "overseer.h"
 #include <cmath>
@@ -23,11 +23,11 @@ void preAutonomous(void) {
 
 void autonomous(void) {
     OverseerBasis &overseer = OverseerBasis::getInstance();
-    overseer.operation(CommandType::Propel, 610.0);
+    overseer.operation(CommandType::Propel, 100.0);
 }
 
 void userControl(void) {
-    ChronoAssist chronos(ChronoType::MinTime, 0.0, 5.0);
+    Timekeeper chronos(TimekeepingType::MinTime, 0.0, 5.0);
     
     // define buttons and callable functions
     auto RubberBandPistonButton = primaryController.ButtonX;

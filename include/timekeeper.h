@@ -1,17 +1,18 @@
-// overseer.h
+// timekeeper.h
 // Copyright (C) 2025 Project Aozora Collaborators
 // 
 // Written by Peter G.
 
 #pragma once
 #include <stdio.h>
+#include <chrono>
 
-enum ChronoType {
+enum TimekeepingType {
     MinTime,
     Stopwatch
 };
 
-class ChronoAssist {
+class Timekeeper {
     private:
         bool storedStart = false;
 
@@ -20,19 +21,19 @@ class ChronoAssist {
 
         double minPoint;
         double setPoint;
-        ChronoType chronoType;
+        TimekeepingType timekeepingType;
     
     public:
         // constructor, sets minPoint
-        ChronoAssist(ChronoType chronoType, double minPoint, double setPoint) {
-            chronoType = chronoType;
+        Timekeeper(TimekeepingType timekeepingType, double minPoint, double setPoint) {
+            timekeepingType = timekeepingType;
             minPoint = minPoint;
             setPoint = setPoint;
         }
 
         // for supplying the start time for use in calculations
-        ChronoAssist(ChronoType chronoType, std::chrono::_V2::system_clock::time_point startTimeSupplied) {
-            chronoType = chronoType;
+        Timekeeper(TimekeepingType timekeepingType, std::chrono::_V2::system_clock::time_point startTimeSupplied) {
+            timekeepingType = timekeepingType;
             startPoint = startTimeSupplied;
         }
 
@@ -61,13 +62,13 @@ class ChronoAssist {
             std::chrono::duration<double> elapsedTime = endPoint - startPoint;
             // printf("[  GET   ] ChronosAssist: Elapsed Time %d\n", elapsedTime.count());
 
-            switch (this->chronoType) {
-                case ChronoType::Stopwatch: {
+            switch (this->timekeepingType) {
+                case TimekeepingType::Stopwatch: {
                     return elapsedTime.count();
                     break;
                 }
 
-                case ChronoType::MinTime: {
+                case TimekeepingType::MinTime: {
                     double staleDuration = setPoint - elapsedTime.count();
                     if (staleDuration < minPoint) {
                         // printf("[  GET   ] ChronosAssist: Returning minPoint of %d\n", minPoint);

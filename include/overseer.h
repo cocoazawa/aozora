@@ -6,7 +6,7 @@
 #pragma once
 #include "math.h"
 #include "config.h"
-#include "chronoAssist.h"
+#include "timekeeper.h"
 
 /// @brief type of Command for Class 2 control
 enum CommandType {
@@ -39,7 +39,7 @@ class OverseerDataProvisioning {
 
         double Cycles = 0.0;
 
-        ChronoAssist chronosLocal = ChronoAssist(ChronoType::Stopwatch, std::chrono::_V2::system_clock::now());
+        Timekeeper chronosLocal = Timekeeper(TimekeepingType::Stopwatch, std::chrono::_V2::system_clock::now());
 
         // error calculation
 
@@ -253,7 +253,7 @@ class OverseerBasis {
             // reset the drivetrain's position values
             DataProvisioner.resetDrivetrainDatascope();
             // only for keeping a minimum time of the loop
-            ChronoAssist chronosBalancer(ChronoType::MinTime, 1.0, 5.0);
+            Timekeeper chronosBalancer(TimekeepingType::MinTime, 1.0, 5.0);
 
             // start the time before the loop starts
             DataProvisioner.startChronosStorage();
