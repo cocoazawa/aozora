@@ -16,19 +16,22 @@ using namespace vex;
 
 void preAutonomous(void) {
     initializeVEX();
-    primaryController.rumble(".");
+    // primaryController.rumble(".");
+    // Hold off on rendering an official interface
+    vex::thread interfaceThread = thread( refreshCompetitionStatus );
 }
 
 void autonomous(void) {
     OverseerBasis &overseer = OverseerBasis::getInstance();
-    overseer.operation(CommandType::Propel, 100.0);
+    overseer.operation(CommandType::Propel, 600.0);
 }
 
 void userControl(void) {
-    // Hold off on rendering an official interface
-    vex::thread interfaceThread = thread( refreshCompetitionStatus );
+    OverseerBasis &overseer = OverseerBasis::getInstance();
+    overseer.operation(CommandType::Propel, 600.0);
 
-    Timekeeper chronos(TimekeepingType::MinTime, 0.0, 5.0);
+    
+    Timekeeper timekeeperLocal(TimekeepingType::MinTime, 1.0, 5.0);
     
     // define buttons and callable functions
     auto RubberBandPistonButton = primaryController.ButtonX;
@@ -50,8 +53,8 @@ void userControl(void) {
     bool motorIntakeStopped = false;
     bool motorSpinnerStopped = false;
 
-    while (1) {
-        chronos.start();
+    while (true) {
+        timekeeperLocal.start();
 
         // Intake or Spinner buttons pressed respectively
         if (IntakeButton.pressing() || IntakeCounterspinButton.pressing()) {
@@ -83,7 +86,7 @@ void userControl(void) {
             MotorLeftGroup.stop();
             MotorRightGroup.stop();
             
-            auto endTime = chronos.ending();
+            auto endTime = timekeeperLocal.ending();
             wait(endTime, msec);
             continue;
         }
@@ -95,15 +98,15 @@ void userControl(void) {
         MotorRightGroup.spin(forward, rightVelocity, rpm);
 
         primaryBrain.Screen.setCursor(6, 1);
-        primaryBrain.Screen.print("MotorLeft POSIT: ");
+        primaryBrain.Screen.print("                   MotorLeft POSIT: ");
         primaryBrain.Screen.print(MotorLeftGroup.position(rev));
         primaryBrain.Screen.print("                    ");
         primaryBrain.Screen.setCursor(7, 1);
-        primaryBrain.Screen.print("MotorRight POSIT:  ");
+        primaryBrain.Screen.print("                  MotorRight POSIT: ");
         primaryBrain.Screen.print(MotorRightGroup.position(rev));
         primaryBrain.Screen.print("                    ");
         
-        auto endTime = chronos.ending();
+        auto endTime = timekeeperLocal.ending();
         wait(endTime, msec);
     }
 }
@@ -112,9 +115,7 @@ void userControl(void) {
 // Main will set up the competition functions and callbacks.
 //
 int main() {
-    printf("\n[>RUNNING] aozora ");
-    printf(aozoraVersion);
-    printf("\n by Aozora Collaborators for team 76371A/B/C.");
+    printf("aozora ・ version %s ・ by Aozora Collaborators", aozoraVersion);
 
     // Run the pre-autonomous function.
     preAutonomous();

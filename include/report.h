@@ -20,13 +20,10 @@ struct Report {
 };
 
 class Reporter {
-   private:
-    static Reporter shared;
-
    public:
-    static Report report;
+    Report report;
 
-    static void UpdateReport() {
+    void UpdateReport() {
         const bool preeminentInertialConnected = primaryInertial.installed();
         const bool preeminentInertialCalibrating = primaryInertial.isCalibrating();
 
@@ -54,7 +51,7 @@ class Reporter {
             preeminentMotorIntakeInstalled);
         
 
-        report = {
+        this->report = {
             inertialConnected : preeminentInertialConnected,
             inertialCalibrating : preeminentInertialCalibrating,
             batteryPercentage : preeminentBatteryCapacity,

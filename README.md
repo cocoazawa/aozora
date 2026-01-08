@@ -8,6 +8,5 @@ The contents of this repository is hereby referred to as the "Code" and is speci
 
 ## Project Aozora Collaborators
 
-- cocoazawa (Peter W.G.)
-
+- (Peter) Woojin Go @cocoazawa
 

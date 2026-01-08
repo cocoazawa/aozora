@@ -97,6 +97,7 @@ class OverseerDatacenter {
             return this->Setpoint;
         }
         /// @brief sets the setpoint
+        /// @param newSetpoint new setpoint (mm)
         void setSetpoint(double newSetpoint) {
             Setpoint = newSetpoint;
         }
@@ -111,6 +112,9 @@ class OverseerDatacenter {
         /// @return relative error (mm)
         double getError() {
             return(getSetpoint() - deriveDisplacement());
+        }
+        double getDisplacement() {
+            return(deriveDisplacement());
         }
 
 
@@ -190,39 +194,37 @@ class OverseerDatacenter {
             // clamping command
             if (command > MaximumDirectRPM) command = MaximumDirectRPM;
             if (command < -MaximumDirectRPM) command = -MaximumDirectRPM;
-            
 
-            printf("%f;", command);
-            printf("%f/", getError());
+            primaryBrain.Screen.setFont(mono15);
+            primaryBrain.Screen.setOrigin(0, 60);
 
-            primaryBrain.Screen.setOrigin(0, 0);
-            primaryBrain.Screen.setCursor(1, 1);
+            primaryBrain.Screen.setCursor(1 + 5, 1);
             primaryBrain.Screen.print("                            Cycles: ");
             primaryBrain.Screen.print(Cycles);
             primaryBrain.Screen.print("                    ");
-            primaryBrain.Screen.setCursor(2, 1);
+            primaryBrain.Screen.setCursor(2 + 5, 1);
             primaryBrain.Screen.print("                           Command: ");
             primaryBrain.Screen.print(command);
             primaryBrain.Screen.print("                    ");
-            primaryBrain.Screen.setCursor(3, 1);
+            primaryBrain.Screen.setCursor(3 + 5, 1);
             primaryBrain.Screen.print("                       Error Value: ");
             primaryBrain.Screen.print(getError());
             primaryBrain.Screen.print("                    ");
-            primaryBrain.Screen.setCursor(4, 1);
+            primaryBrain.Screen.setCursor(4 + 5, 1);
             primaryBrain.Screen.print("        DirectDisplacement Reading: ");
             primaryBrain.Screen.print(deriveDisplacement());
             primaryBrain.Screen.print("                    ");
-            primaryBrain.Screen.setCursor(6, 1);
+            primaryBrain.Screen.setCursor(5 + 5, 1);
             primaryBrain.Screen.print("                   MotorLeft POSIT: ");
             max(&positionLeftMaximum, MotorLeftGroup.position(rev));
             primaryBrain.Screen.print("%f", positionLeftMaximum);
             primaryBrain.Screen.print("                    ");
-            primaryBrain.Screen.setCursor(7, 1);
+            primaryBrain.Screen.setCursor(6 + 5, 1);
             primaryBrain.Screen.print("                  MotorRight POSIT: ");
             max(&positionRightMaximum, MotorRightGroup.position(rev));
             primaryBrain.Screen.print("%f", positionRightMaximum);
             primaryBrain.Screen.print("                    ");
-            primaryBrain.Screen.setCursor(8, 1);
+            primaryBrain.Screen.setCursor(7 + 5, 1);
             primaryBrain.Screen.print("               STOP COMMAND ISSUED: ");
             primaryBrain.Screen.print("FALSE");
             primaryBrain.Screen.print("                    ");
@@ -254,11 +256,11 @@ class OverseerBasis {
             bool stopping = false;
             
             // error is within boundaries
-            if ((*datacenterGeneric).getError() < OverseerToleranceUpper && (*datacenterGeneric).getError() > OverseerToleranceLower) { stopping = true; }
+            if ((*datacenterGeneric).getError() < OverseerToleranceUpper && (*datacenterGeneric).getError() > OverseerToleranceLower) stopping = true;
             
             // emergency stop is being issued
-            if (primaryController.ButtonDown.pressing() && primaryController.ButtonUp.pressing()) { stopping = true; }
-
+            if (primaryController.ButtonDown.pressing() && primaryController.ButtonUp.pressing()) stopping = true;
+            
             return stopping;
         }
 
@@ -273,22 +275,36 @@ class OverseerBasis {
 
             // remain in control until a stop has been issued
             while (stopIssue != true) {
-
-                double leftCommand = datacenterLeft.deriveCommand();
-                MotorLeftGroup.spin(forward, leftCommand, vex::velocityUnits::rpm);
-                
-                double rightCommand = datacenterRight.deriveCommand();
-                MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
-
-
                 // issue a stop when the error is below the threshold
-                if (evaluateStopCondition(&datacenterLeft) || evaluateStopCondition(&datacenterRight)) {
-                    primaryBrain.Screen.setCursor(8, 1);
+                if (evaluateStopCondition(&datacenterLeft) && evaluateStopCondition(&datacenterRight)) {
+                    primaryBrain.Screen.setFont(mono15);
+                    primaryBrain.Screen.setOrigin(0, 60);
+                    primaryBrain.Screen.setCursor(7 + 5, 1);
                     primaryBrain.Screen.print("               STOP COMMAND ISSUED: ");
                     primaryBrain.Screen.print("TRUE");
                     primaryBrain.Screen.print("                    ");
                     issueStop();
                 }
+
+                double leftCommand = 0.0;
+                if(!evaluateStopCondition(&datacenterLeft)) {
+                    leftCommand = datacenterLeft.deriveCommand();
+                    MotorLeftGroup.spin(forward, leftCommand, vex::velocityUnits::rpm);
+                }
+                
+                double rightCommand = 0.0;
+                if(!evaluateStopCondition(&datacenterRight)) {
+                    rightCommand = datacenterRight.deriveCommand();
+                    MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
+                }
+
+
+                printf("%f;", leftCommand);
+                printf("%f;", rightCommand);
+                printf("%f;", datacenterLeft.getDisplacement());
+                printf("%f/", datacenterRight.getDisplacement());
+
+
             }
         }
 
