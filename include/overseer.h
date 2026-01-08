@@ -14,6 +14,8 @@ enum CommandType {
     Propel = 1,
     Unissued = 2
 };
+
+
 /// @brief side of the motor group
 enum MotorGroupSide {
     Left = 0,
@@ -26,7 +28,6 @@ enum MotorGroupSide {
 class OverseerDatacenter {
     private:
         MotorGroupSide ActiveSide;
-        Timekeeper* centralTimekeeper;
 
         double Setpoint = 0;
 
@@ -40,7 +41,7 @@ class OverseerDatacenter {
 
         int Cycles = 0;
 
-        Timekeeper timekeeperData = Timekeeper(TimekeepingType::Stopwatch, std::chrono::_V2::system_clock::now());
+        Timekeeper timekeeperData = Timekeeper(TimekeepingType::Stopwatch);
 
 
 
@@ -58,37 +59,26 @@ class OverseerDatacenter {
             return averageDoubles;
         }
 
-        /// @brief gets the rotational displacement of a specified motor group.
-        /// @param group specified motor group based on the `MotorGroupSide` enum
-        /// @return returns the total revolutions of the motor group's side (averaged);
-        double getGroupAngularDisplacement() {
-            double average = 0.0;
-
+        /// @brief derives total displacement in millimeters for the active side
+        /// @return displacement in millimeters
+        double deriveDisplacement() {
+            double totalRotationalDisplacement = 0.0;
+    
             // NOTE: we use revolutions for calculations, not degrees.
             switch(ActiveSide) {
                 case MotorGroupSide::Left: {
-                    average = deriveCubicAverage(MotorLeftFront.position(vex::rotationUnits::rev), MotorLeftMid.position(vex::rotationUnits::rev), MotorLeftBack.position(vex::rotationUnits::rev));
+                    totalRotationalDisplacement = deriveCubicAverage(MotorLeftFront.position(vex::rotationUnits::rev), MotorLeftMid.position(vex::rotationUnits::rev), MotorLeftBack.position(vex::rotationUnits::rev));
                     break;
                 }
                 case MotorGroupSide::Right: {
-                    average = deriveCubicAverage(MotorRightFront.position(vex::rotationUnits::rev), MotorRightMid.position(vex::rotationUnits::rev), MotorRightBack.position(vex::rotationUnits::rev));
+                    totalRotationalDisplacement = deriveCubicAverage(MotorRightFront.position(vex::rotationUnits::rev), MotorRightMid.position(vex::rotationUnits::rev), MotorRightBack.position(vex::rotationUnits::rev));
                     break;
                 }
                 default: { break; }
             }
-
-            return average;
-        }
-
-        /// @brief derives total displacement in millimeters for the active side
-        /// @return displacement in millimeters
-        double deriveDisplacement() {
-            // get average
-            double totalRotationalDisplacement = getGroupAngularDisplacement();
             
             // average multiplied by the gear ratio to get actual travel per cent and
-            double totalLinearDisplacement = totalRotationalDisplacement * GearRatio * TravelDistance;
-            return totalLinearDisplacement;
+            return(totalRotationalDisplacement * GearRatio * TravelDistance);
         }
 
 
@@ -97,17 +87,18 @@ class OverseerDatacenter {
     public:
         /// @brief constructor for Datacenter with active side
         /// @param side active side
-        OverseerDatacenter(MotorGroupSide side, Timekeeper* timekeeper) {
+        OverseerDatacenter(MotorGroupSide side) {
             this->ActiveSide = side;
-
-            this->centralTimekeeper = timekeeper;
-            (*centralTimekeeper).storeStart(std::chrono::system_clock::now());
         }
         
         /// @brief gets the current setpoint
         /// @return setpoint (mm)
         double getSetpoint() {
             return this->Setpoint;
+        }
+        /// @brief sets the setpoint
+        void setSetpoint(double newSetpoint) {
+            Setpoint = newSetpoint;
         }
 
         /// @brief gets the active side
@@ -124,18 +115,29 @@ class OverseerDatacenter {
 
 
 
-        /// @brief resets the motor encoder positions
-        void resetDrivetrainDatascope() {
-            MotorLeftFront.resetPosition();
-            MotorLeftMid.resetPosition();
-            MotorLeftBack.resetPosition();
 
-            MotorRightFront.resetPosition();
-            MotorRightMid.resetPosition();
-            MotorRightBack.resetPosition();
+        /// @brief resets the timekeeper
+        void resetTimekeeper() {
+            timekeeperData.storeStart(std::chrono::system_clock::now());
         }
 
-        /// @brief force stops all motors on the drivetrain
+        /// @brief resets the motor encoder positions
+        void resetDrivetrainDatascope() {
+            switch (ActiveSide) {
+                case Left:
+                    MotorLeftFront.resetPosition();
+                    MotorLeftMid.resetPosition();
+                    MotorLeftBack.resetPosition();
+                    break;
+                case Right:
+                    MotorRightFront.resetPosition();
+                    MotorRightMid.resetPosition();
+                    MotorRightBack.resetPosition();
+                    break;
+            }
+        }
+
+        /// @brief force stops all motors on the drivetrain (regardless of active side, stops all motors)
         static void stopDrivetrain() {
             MotorLeftFront.stop();
             MotorLeftMid.stop();
@@ -147,17 +149,31 @@ class OverseerDatacenter {
         }
 
 
+        double positionLeftMaximum = 0;
+        double positionRightMaximum = 0;
+
+        void max(double* point, double data) {
+            if(*point < data) {
+                *point = data;
+            }
+        }
+
+
 
 
         /// @brief derives the command based on the PID control loop
-        /// @param elapsedTime the total elapsed time between the last command and this command
         /// @return returns the command to be issued to the motors
         double deriveCommand() {
+            Cycles++;
             double errorValue = getError();
     
             rawCurrentError = errorValue;
             rawSummedError += errorValue;
-            auto elapsedTime = (*centralTimekeeper).ending();
+            
+            auto elapsedTime = timekeeperData.ending();
+            timekeeperData.destoreStart();
+            timekeeperData.start();
+
             if (elapsedTime == 0.0) {
                 rawRateBasedError = 0;
             } else {
@@ -174,13 +190,12 @@ class OverseerDatacenter {
             // clamping command
             if (command > MaximumDirectRPM) command = MaximumDirectRPM;
             if (command < -MaximumDirectRPM) command = -MaximumDirectRPM;
-            (*centralTimekeeper).destoreStart();
-            (*centralTimekeeper).start();
             
 
-            printf("[OVERSEER] COMMAND VALUE %d", command);
-            printf("[OVERSEER] ERROR VALUE %d", getError());
+            printf("%f;", command);
+            printf("%f/", getError());
 
+            primaryBrain.Screen.setOrigin(0, 0);
             primaryBrain.Screen.setCursor(1, 1);
             primaryBrain.Screen.print("                            Cycles: ");
             primaryBrain.Screen.print(Cycles);
@@ -197,13 +212,19 @@ class OverseerDatacenter {
             primaryBrain.Screen.print("        DirectDisplacement Reading: ");
             primaryBrain.Screen.print(deriveDisplacement());
             primaryBrain.Screen.print("                    ");
-            primaryBrain.Screen.setCursor(5, 1);
-            primaryBrain.Screen.print("       AngularDisplacement Reading: ");
-            primaryBrain.Screen.print(getGroupAngularDisplacement());
-            primaryBrain.Screen.print("                    ");
             primaryBrain.Screen.setCursor(6, 1);
-            primaryBrain.Screen.print("     Active Side (0 Left, 1 Right): ");
-            primaryBrain.Screen.print("%i", ActiveSide);
+            primaryBrain.Screen.print("                   MotorLeft POSIT: ");
+            max(&positionLeftMaximum, MotorLeftGroup.position(rev));
+            primaryBrain.Screen.print("%f", positionLeftMaximum);
+            primaryBrain.Screen.print("                    ");
+            primaryBrain.Screen.setCursor(7, 1);
+            primaryBrain.Screen.print("                  MotorRight POSIT: ");
+            max(&positionRightMaximum, MotorRightGroup.position(rev));
+            primaryBrain.Screen.print("%f", positionRightMaximum);
+            primaryBrain.Screen.print("                    ");
+            primaryBrain.Screen.setCursor(8, 1);
+            primaryBrain.Screen.print("               STOP COMMAND ISSUED: ");
+            primaryBrain.Screen.print("FALSE");
             primaryBrain.Screen.print("                    ");
 
             return command;
@@ -220,19 +241,20 @@ class OverseerBasis {
 
         // central datacenter
         // TODO: Provision a datacenter with a pointer to the central timekeeper. You can make the timekeeper public.
-        OverseerDatacenter datacenter;
+        OverseerDatacenter datacenterLeft = OverseerDatacenter(Left);
+        OverseerDatacenter datacenterRight = OverseerDatacenter(Right);
 
         // central timekeeper
         Timekeeper timekeeperCentral = Timekeeper(TimekeepingType::Stopwatch);
 
 
-        /// @brief determines if the stop conditions have been reached
+        /// @brief evaluates if the stop conditions have been reached for this datacenter
         /// @return a boolean value of true if the autonomous control should halt immediately or not
-        bool stopConditionReached() {
+        bool evaluateStopCondition(OverseerDatacenter* datacenterGeneric) {
             bool stopping = false;
             
             // error is within boundaries
-            if (datacenter.getError() < OverseerToleranceUpper && datacenter.getError() > OverseerToleranceLower) { stopping = true; }
+            if ((*datacenterGeneric).getError() < OverseerToleranceUpper && (*datacenterGeneric).getError() > OverseerToleranceLower) { stopping = true; }
             
             // emergency stop is being issued
             if (primaryController.ButtonDown.pressing() && primaryController.ButtonUp.pressing()) { stopping = true; }
@@ -243,53 +265,35 @@ class OverseerBasis {
 
         /// @brief runs the control loop until stop is issued
         void startControl() {
+            printf("RESET\n");
             // reset the drivetrain's position values
-            datacenter.resetDrivetrainDatascope();
+            datacenterLeft.resetDrivetrainDatascope();
+            datacenterRight.resetDrivetrainDatascope();
+
 
             // remain in control until a stop has been issued
             while (stopIssue != true) {
 
-                // derive command value
-                // double command = datacenter.deriveCommand();
-    
-                // access command type from provisioning and command accordingly
-                // switch (datacenter.getCommandType()) {
-                //     case CommandType::Pivot: {
-                //         if (command > 0) {
-                //             MotorLeftGroup.spin(forward, abs(command), vex::velocityUnits::rpm);
-                //             MotorRightGroup.spin(reverse, abs(command), vex::velocityUnits::rpm);
-                //         } else {
-                //             MotorLeftGroup.spin(reverse, abs(command), vex::velocityUnits::rpm);
-                //             MotorRightGroup.spin(forward, abs(command), vex::velocityUnits::rpm);
-                //         }
-                //         break;
-                //     }
-
-                //     case CommandType::Propel: {
-                //         MotorLeftGroup.spin(forward, command, vex::velocityUnits::rpm);
-                //         MotorRightGroup.spin(forward, command, vex::velocityUnits::rpm);
-                //         break;
-                //     }
-
-                //     default: { break; }
-                // }
-
-
-                // // issue a stop when the error is below the threshold
-                // if (stopConditionReached()) {
-                //     issueStop();
-                // }
-
+                double leftCommand = datacenterLeft.deriveCommand();
+                MotorLeftGroup.spin(forward, leftCommand, vex::velocityUnits::rpm);
                 
-                // // calculates endtime and waits for that amount of time
-                // auto endTime = timekeeperControl.ending();
-                // wait(endTime, msec);
+                double rightCommand = datacenterRight.deriveCommand();
+                MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
+
+
+                // issue a stop when the error is below the threshold
+                if (evaluateStopCondition(&datacenterLeft) || evaluateStopCondition(&datacenterRight)) {
+                    primaryBrain.Screen.setCursor(8, 1);
+                    primaryBrain.Screen.print("               STOP COMMAND ISSUED: ");
+                    primaryBrain.Screen.print("TRUE");
+                    primaryBrain.Screen.print("                    ");
+                    issueStop();
+                }
             }
         }
 
         
         OverseerBasis() {
-            datacenter = OverseerDatacenter(MotorGroupSide::Left, &timekeeperCentral);
             printf("[OVERSEER] OverseerBasis instance created.\n");
         }
         
@@ -312,9 +316,19 @@ class OverseerBasis {
         /// @brief Runs the operation until the setpoint has been reached or time outs
         /// @param commandType The type of command to operate
         /// @param setPoint The set point in MILLIMETERS OR in DEGREES depending on the type of the command
-        void operation(CommandType commandType, double setPoint) {
-            datacenter.provision(commandType, setPoint);
-            
+        void operation(CommandType commandType, double setpoint) {
+            switch (commandType) {
+                case Propel:
+                    datacenterLeft.setSetpoint(setpoint);
+                    datacenterRight.setSetpoint(setpoint);
+                    break;
+                default:
+                    break;
+            }
+
+            datacenterLeft.resetTimekeeper();
+            datacenterRight.resetTimekeeper();
+
             startControl();
 
             return;

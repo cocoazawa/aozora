@@ -28,10 +28,10 @@ class Timekeeper {
         /// @param timekeepingType timekeeping type
         /// @param minPoint minimum time we should rest for
         /// @param setPoint the time we are trying to rest for. calculations will be based off of this
-        Timekeeper(TimekeepingType givenTimekeepingType, double minPoint, double setPoint) {
+        Timekeeper(TimekeepingType givenTimekeepingType, double givenMinPoint, double givenSetPoint) {
             timekeepingType = givenTimekeepingType;
-            minPoint = minPoint;
-            setPoint = setPoint;
+            minPoint = givenMinPoint;
+            setPoint = givenSetPoint;
         }
 
         /// @brief constructor for supplying the start time for use in calculations
@@ -76,7 +76,7 @@ class Timekeeper {
         double ending() {
             endPoint = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsedTime = endPoint - startPoint;
-            // printf("[  GET   ] ChronosAssist: Elapsed Time %d\n", elapsedTime.count());
+            // printf("[  GET   ] ChronosAssist: Elapsed Time %f\n", elapsedTime.count());
 
             switch (this->timekeepingType) {
                 case TimekeepingType::Stopwatch: {
@@ -87,12 +87,12 @@ class Timekeeper {
                 case TimekeepingType::MinTime: {
                     double staleDuration = setPoint - elapsedTime.count();
                     if (staleDuration < minPoint) {
-                        // printf("[  GET   ] ChronosAssist: Returning minPoint of %d\n", minPoint);
-                        // printf("[  READ  ] ChronosAssist: staleDuration was %d\n", staleDuration);
+                        // printf("[  GET   ] ChronosAssist: Returning minPoint of %f\n", minPoint);
+                        // printf("[  READ  ] ChronosAssist: staleDuration was %f\n", staleDuration);
                         return minPoint;
                     }
 
-                    // printf("[  GET   ] ChronosAssist: Returning staleDuration of %d and setPoint of %d\n", staleDuration, setPoint);
+                    // printf("[  GET   ] ChronosAssist: Returning staleDuration of %f and setPoint of %f\n", staleDuration, setPoint);
                     return staleDuration;
                     break;
                 }

@@ -15,7 +15,7 @@ brain primaryBrain;
 competition Competition;
 
 
-#define aozoraVersion "v0.16.14\n"
+static const char* aozoraVersion = "0.16.21";
 #define aozoraExperimental true
 
 // #define aozoraColor red
@@ -29,7 +29,7 @@ static const int adjustVertical = -15;
 
 // maximum direct rpm output from the motor
 double MaximumDirectRPM = 600;
-double TravelDistance = 600;
+double TravelDistance = 260;
 double AxelWidth = 287.5;
 double TotalCircumference = AxelWidth * M_PI * 2;
 // ratio remapping from the direct output to the actual output (yes, this CAN be simplified; it SHOULD NOT BE SIMPLIFIED)
@@ -39,14 +39,15 @@ double ElapseGoalTime = 8;
 
 
 // Overseer
-double ProportionalMultiplier = 0.5;
-double IntegralMultiplier = 0.2;
-double DerivativeMultiplier = 0.5;
+double ProportionalMultiplier = 1.0;
+double IntegralMultiplier = 0.01;
+double DerivativeMultiplier = 0.007;
 double OverallMultiplier = 0.1;
+
 // the LOWER BOUNDS for the error
-double OverseerToleranceUpper = -5.0;
+double OverseerToleranceUpper = 5.0;
 // the UPPER BOUNDS for the error
-double OverseerToleranceLower = 5.0;
+double OverseerToleranceLower = -5.0;
 
 // the LOWER BOUNDS for the driverControl's Controller
 double ControllerTolerance = 0.02;
@@ -89,14 +90,14 @@ inertial primaryInertial(PORT11);
 
 
 void initializeVEX(void) {
-    MotorLeftFront.setBrake(vex::brakeType::brake);
-    MotorLeftMid.setBrake(vex::brakeType::brake);
-    MotorLeftBack.setBrake(vex::brakeType::brake);
-    MotorRightFront.setBrake(vex::brakeType::brake);
-    MotorRightMid.setBrake(vex::brakeType::brake);
-    MotorRightBack.setBrake(vex::brakeType::brake);
-    MotorSpinner.setBrake(vex::brakeType::brake);
-    MotorIntake.setBrake(vex::brakeType::brake);
+    MotorLeftFront.setBrake(vex::brakeType::coast);
+    MotorLeftMid.setBrake(vex::brakeType::coast);
+    MotorLeftBack.setBrake(vex::brakeType::coast);
+    MotorRightFront.setBrake(vex::brakeType::coast);
+    MotorRightMid.setBrake(vex::brakeType::coast);
+    MotorRightBack.setBrake(vex::brakeType::coast);
+    MotorSpinner.setBrake(vex::brakeType::coast);
+    MotorIntake.setBrake(vex::brakeType::coast);
 
     primaryBrain.Screen.setOrigin(1, 40);
 }
