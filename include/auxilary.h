@@ -1,5 +1,5 @@
 // auxilary.cpp
-// Copyright (C) 2025 Project Aozora Collaborators
+// Copyright (C) 2025 cocoazawa
 //
 // Written by Peter G.
 

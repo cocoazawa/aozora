@@ -1,6 +1,6 @@
 # Overseer Navigation Class
 
-Copyright (C) 2025 Project Aozora Collaborators. All rights reserved.  
+Copyright (C) 2025 cocoazawa. All rights reserved.  
 
 ## About
 

@@ -1,5 +1,5 @@
 // report.h
-// Copyright (C) 2026 Project Aozora Collaborators
+// Copyright (C) 2026 cocoazawa
 //
 // Written by Peter G.
 
