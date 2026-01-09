@@ -1,5 +1,5 @@
 // config.h
-// Copyright (C) 2025 Project Aozora Collaborators
+// Copyright (C) 2025 cocoazawa
 // 
 // Written by Peter G.
 
@@ -15,7 +15,8 @@ brain primaryBrain;
 competition Competition;
 
 
-static const char* aozoraVersion = "0.16.27";
+static const char* aozoraVersion = "0.17.0";
+static const char* profileVersion = "SPAN-13";
 #define aozoraExperimental true
 
 // #define aozoraColor red
@@ -46,15 +47,18 @@ double ElapseGoalTime = 8;
 // double DerivativeMultiplier = 0.007;
 // double OverallMultiplier = 0.1;
 
-/// @details Speed Priority, Accuracy Next (SPAN) Profile
-double ProportionalMultiplier = 2.0;
-double IntegralMultiplier = 0.25;
-double DerivativeMultiplier = 20000000000.27;
+/// @details Speed Priority, Accuracy Non-controlled (SPAN) Profile
+double ProportionalMultiplier = 15.0;
+double IntegralMultiplier = 0.3;
+double DerivativeMultiplier = 1.00;
 double OverallMultiplier = 0.1;
 
-// the LOWER BOUNDS for the error
+
+
+
+
+// tolerances for Overseer
 double OverseerToleranceUpper = 1.0;
-// the UPPER BOUNDS for the error
 double OverseerToleranceLower = -1.0;
 
 // the LOWER BOUNDS for the driverControl's Controller
@@ -97,14 +101,14 @@ inertial primaryInertial(PORT11);
 
 
 void initializeVEX(void) {
-    MotorLeftFront.setBrake(vex::brakeType::brake);
-    MotorLeftMid.setBrake(vex::brakeType::brake);
-    MotorLeftBack.setBrake(vex::brakeType::brake);
-    MotorRightFront.setBrake(vex::brakeType::brake);
-    MotorRightMid.setBrake(vex::brakeType::brake);
-    MotorRightBack.setBrake(vex::brakeType::brake);
-    MotorSpinner.setBrake(vex::brakeType::brake);
-    MotorIntake.setBrake(vex::brakeType::brake);
+    MotorLeftFront.setBrake(vex::brakeType::coast);
+    MotorLeftMid.setBrake(vex::brakeType::coast);
+    MotorLeftBack.setBrake(vex::brakeType::coast);
+    MotorRightFront.setBrake(vex::brakeType::coast);
+    MotorRightMid.setBrake(vex::brakeType::coast);
+    MotorRightBack.setBrake(vex::brakeType::coast);
+    MotorSpinner.setBrake(vex::brakeType::coast);
+    MotorIntake.setBrake(vex::brakeType::coast);
 
     primaryBrain.Screen.setOrigin(1, 40);
 }

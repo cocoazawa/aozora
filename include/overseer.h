@@ -1,5 +1,5 @@
 // overseer.h
-// Copyright (C) 2025 Project Aozora Collaborators
+// Copyright (C) 2026 cocoazawa
 // 
 // Written by Peter G.
 
@@ -7,6 +7,7 @@
 #include "math.h"
 #include "config.h"
 #include "timekeeper.h"
+
 
 /// @brief type of Command for Class 2 control
 enum CommandType {
@@ -38,6 +39,8 @@ class OverseerDatacenter {
         double CurrentError = 0;
         double SummedError = 0;
         double RateBasedError = 0;
+        
+        double previousErrorValue = 0;
 
         int Cycles = 0;
 
@@ -90,7 +93,7 @@ class OverseerDatacenter {
         OverseerDatacenter(MotorGroupSide side) {
             this->ActiveSide = side;
         }
-        
+
         /// @brief gets the current setpoint
         /// @return setpoint (mm)
         double getSetpoint() {
@@ -170,6 +173,7 @@ class OverseerDatacenter {
         double deriveCommand() {
             Cycles++;
             double errorValue = getError();
+            if (previousErrorValue == 0) previousErrorValue = errorValue;
     
             rawCurrentError = errorValue;
             rawSummedError += errorValue;
@@ -181,7 +185,7 @@ class OverseerDatacenter {
             if (elapsedTime == 0.0) {
                 rawRateBasedError = 0;
             } else {
-                rawRateBasedError = errorValue / elapsedTime;
+                rawRateBasedError = (previousErrorValue - errorValue) / elapsedTime;
             }
             
             CurrentError = ProportionalMultiplier * rawCurrentError;
@@ -194,6 +198,8 @@ class OverseerDatacenter {
             // clamping command
             if (command > MaximumDirectRPM) command = MaximumDirectRPM;
             if (command < -MaximumDirectRPM) command = -MaximumDirectRPM;
+
+            previousErrorValue = errorValue;
 
             primaryBrain.Screen.setFont(mono15);
             primaryBrain.Screen.setOrigin(0, 60);
@@ -303,8 +309,6 @@ class OverseerBasis {
                 printf("%f;", rightCommand);
                 printf("%f;", datacenterLeft.getDisplacement());
                 printf("%f/", datacenterRight.getDisplacement());
-
-
             }
         }
 

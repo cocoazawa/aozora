@@ -1,5 +1,5 @@
 // main.cpp
-// Copyright (C) 2025 Project Aozora Collaborators
+// Copyright (C) 2025 cocoazawa
 //
 // Written by Peter G.
 
@@ -22,15 +22,14 @@ void preAutonomous(void) {
 }
 
 void autonomous(void) {
-    OverseerBasis &overseer = OverseerBasis::getInstance();
-    overseer.operation(CommandType::Propel, 600.0);
+    // OverseerBasis &overseer = OverseerBasis::getInstance();
+    // overseer.operation(CommandType::Propel, 600.0);
 }
 
 void userControl(void) {
     OverseerBasis &overseer = OverseerBasis::getInstance();
     overseer.operation(CommandType::Propel, 600.0);
 
-    
     Timekeeper timekeeperLocal(TimekeepingType::MinTime, 1.0, 5.0);
     
     // define buttons and callable functions
@@ -115,8 +114,9 @@ void userControl(void) {
 // Main will set up the competition functions and callbacks.
 //
 int main() {
-    printf("aozora ・ version %s ・ by Aozora Collaborators", aozoraVersion);
-
+    printf("\n\naozora -- version %s -- by cocoazawa\n", aozoraVersion);
+    printf("aozora -- profile %s\n\n\n", profileVersion);
+    
     // Run the pre-autonomous function.
     preAutonomous();
 
