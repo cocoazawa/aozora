@@ -291,17 +291,11 @@ class OverseerBasis {
                     issueStop();
                 }
 
-                double leftCommand = 0.0;
-                if(!evaluateStopCondition(&datacenterLeft)) {
-                    leftCommand = datacenterLeft.deriveCommand();
-                    MotorLeftGroup.spin(forward, leftCommand, vex::velocityUnits::rpm);
-                }
+                double leftCommand = datacenterLeft.deriveCommand();
+                MotorLeftGroup.spin(forward, leftCommand, vex::velocityUnits::rpm);
                 
-                double rightCommand = 0.0;
-                if(!evaluateStopCondition(&datacenterRight)) {
-                    rightCommand = datacenterRight.deriveCommand();
-                    MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
-                }
+                double rightCommand = datacenterRight.deriveCommand();
+                MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
 
 
                 printf("%f;", leftCommand);
@@ -342,6 +336,14 @@ class OverseerBasis {
                     datacenterRight.setSetpoint(setpoint);
                     break;
                 default:
+                    double dialedSetpoint = (abs(setpoint) / 360.0) * M_PI * 2 * (TotalMachineDiameter / 2);
+                    if (setpoint > 0) {
+                        datacenterLeft.setSetpoint(dialedSetpoint);
+                        datacenterRight.setSetpoint(-1 * dialedSetpoint);
+                    } else {
+                        datacenterLeft.setSetpoint(-1 * dialedSetpoint);
+                        datacenterRight.setSetpoint(dialedSetpoint);
+                    }
                     break;
             }
 

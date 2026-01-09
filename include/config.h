@@ -25,6 +25,8 @@ static const char* profileVersion = "SPAN-13";
 static const int adjustHorizontal = -10;
 static const int adjustVertical = -15;
 
+static const double TotalMachineDiameter = 128;
+
 
 
 
