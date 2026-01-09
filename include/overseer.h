@@ -49,6 +49,18 @@ class OverseerDatacenter {
 
 
 
+        double positionLeftMaximum = 0;
+        double positionRightMaximum = 0;
+
+        void max(double* point, double data) {
+            if(*point < data) {
+                *point = data;
+            }
+        }
+
+
+
+
         // angular displacement and eventual displacement derivation
         
         /// @brief gets the average of three doubles
@@ -154,19 +166,6 @@ class OverseerDatacenter {
             MotorRightMid.stop();
             MotorRightBack.stop();
         }
-
-
-        double positionLeftMaximum = 0;
-        double positionRightMaximum = 0;
-
-        void max(double* point, double data) {
-            if(*point < data) {
-                *point = data;
-            }
-        }
-
-
-
 
         /// @brief derives the command based on the PID control loop
         /// @return returns the command to be issued to the motors

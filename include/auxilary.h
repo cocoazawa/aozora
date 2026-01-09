@@ -33,17 +33,3 @@ void trigger(vex::digital_out &peripheral) {
             break;
     }
 }
-
-
-
-/// @brief emergency stop using down and up buttons pressed together. also allows for thread-detached running.
-// void EmergencyStopThread() {
-//     OverseerBasis &overseerLocal = OverseerBasis::getInstance();
-    
-//     while(true) {
-//         if (primaryController.ButtonDown.pressing() && primaryController.ButtonUp.pressing()) {
-//             overseerLocal.issueStop();
-//         }
-//         vex::this_thread::sleep_for(10);
-//     }
-// }
