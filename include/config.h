@@ -15,7 +15,7 @@ brain primaryBrain;
 competition Competition;
 
 
-static const char* aozoraVersion = "0.17.0";
+static const char* aozoraVersion = "0.17.4";
 static const char* profileVersion = "SPAN-13";
 #define aozoraExperimental true
 
