@@ -15,9 +15,8 @@ brain primaryBrain;
 competition Competition;
 
 
-static const char* aozoraVersion = "0.17.4";
-static const char* profileVersion = "SPAN-13";
-#define aozoraExperimental true
+static const char* aozoraVersion = "0.17.5";
+#define aozoraExperimental false
 
 // #define aozoraColor red
 #define aozoraTeamColor blue
@@ -68,8 +67,10 @@ double ControllerTolerance = 0.02;
 
 
 // pistons
+vex::triport::port DescorePistonPort = primaryBrain.ThreeWirePort.C;
 vex::triport::port RubberBandPistonPort = primaryBrain.ThreeWirePort.B;
 vex::triport::port IntakePistonPort = primaryBrain.ThreeWirePort.A;
+pneumatics DescorePiston(DescorePistonPort);
 pneumatics RubberBandPiston(RubberBandPistonPort);
 pneumatics IntakePiston(IntakePistonPort);
 
