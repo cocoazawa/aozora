@@ -41,18 +41,21 @@ double ElapseGoalTime = 8;
 
 
 // Overseer
+double LeftSkewMultiplier = 0.86;
 
-/// @details Speed Last, Accuracy First (SLAF) Profile
-// double ProportionalMultiplier = 1.0;
-// double IntegralMultiplier = 0.001;
-// double DerivativeMultiplier = 0.007;
-// double OverallMultiplier = 0.1;
-
-/// @details Speed Priority, Accuracy Non-controlled (SPAN) Profile
-double ProportionalMultiplier = 15.0;
-double IntegralMultiplier = 0.3;
-double DerivativeMultiplier = 1.00;
+/// @details Speed Last, Accuracy First (SLAF-00) Profile
+static const char* profileVersion = "SLAF-00";
+double ProportionalMultiplier = 1.0;
+double IntegralMultiplier = 0.001;
+double DerivativeMultiplier = 0.007;
 double OverallMultiplier = 0.1;
+
+/// @details Speed Priority, Accuracy Non-controlled (SPAN-14) Profile
+// static const char* profileVersion = "SPAN-19";
+// double ProportionalMultiplier = 0.6;
+// double IntegralMultiplier = 0.006;
+// double DerivativeMultiplier = 100.9;
+// double OverallMultiplier = 1.0;
 
 
 

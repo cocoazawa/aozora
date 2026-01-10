@@ -22,14 +22,11 @@ void preAutonomous(void) {
 }
 
 void autonomous(void) {
-    // OverseerBasis &overseer = OverseerBasis::getInstance();
-    // overseer.operation(CommandType::Propel, 600.0);
+    OverseerBasis &overseer = OverseerBasis::getInstance();
+    overseer.operation(CommandType::Propel, 150.0);
 }
 
 void userControl(void) {
-    OverseerBasis &overseer = OverseerBasis::getInstance();
-    overseer.operation(CommandType::Propel, 600.0);
-
     Timekeeper timekeeperLocal(TimekeepingType::MinTime, 1.0, 5.0);
     
     // define buttons and callable functions

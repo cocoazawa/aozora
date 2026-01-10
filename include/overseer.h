@@ -41,6 +41,7 @@ class OverseerDatacenter {
         double RateBasedError = 0;
         
         double previousErrorValue = 0;
+        double previousElapsedTime = 0;
 
         int Cycles = 0;
 
@@ -181,10 +182,13 @@ class OverseerDatacenter {
             timekeeperData.destoreStart();
             timekeeperData.start();
 
-            if (elapsedTime == 0.0) {
+            if (elapsedTime == 0.0 && previousElapsedTime != 0.0) {
+                rawRateBasedError = (previousErrorValue - errorValue) / previousElapsedTime;
+            } else if (previousElapsedTime == 0) {
                 rawRateBasedError = 0;
             } else {
                 rawRateBasedError = (previousErrorValue - errorValue) / elapsedTime;
+                previousElapsedTime = elapsedTime;
             }
             
             CurrentError = ProportionalMultiplier * rawCurrentError;
@@ -251,9 +255,6 @@ class OverseerBasis {
         OverseerDatacenter datacenterLeft = OverseerDatacenter(Left);
         OverseerDatacenter datacenterRight = OverseerDatacenter(Right);
 
-        // central timekeeper
-        Timekeeper timekeeperCentral = Timekeeper(TimekeepingType::Stopwatch);
-
 
         /// @brief evaluates if the stop conditions have been reached for this datacenter
         /// @return a boolean value of true if the autonomous control should halt immediately or not
@@ -289,10 +290,11 @@ class OverseerBasis {
                     primaryBrain.Screen.print("TRUE");
                     primaryBrain.Screen.print("                    ");
                     issueStop();
+                    return;
                 }
 
                 double leftCommand = datacenterLeft.deriveCommand();
-                MotorLeftGroup.spin(forward, leftCommand, vex::velocityUnits::rpm);
+                MotorLeftGroup.spin(forward, (LeftSkewMultiplier * leftCommand), vex::velocityUnits::rpm);
                 
                 double rightCommand = datacenterRight.deriveCommand();
                 MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
