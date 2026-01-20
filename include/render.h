@@ -108,7 +108,10 @@ void refreshCompetitionStatus() {
         }
         screenRef.print("                    ");
 
+        screenRef.setOrigin(0, 0);
         vex::this_thread::sleep_for(timekeeper.ending());
     }
+    
+    screenRef.setOrigin(0, 0);
 }
 
