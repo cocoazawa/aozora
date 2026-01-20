@@ -13,20 +13,34 @@
 
 using namespace vex;
 
+void autonomousAuxilary() {
+    MotorIntake.spin(forward, 600, rpm);
+}
 
 void preAutonomous(void) {
     initializeVEX();
     // primaryController.rumble(".");
     // Hold off on rendering an official interface
-    vex::thread interfaceThread = thread( refreshCompetitionStatus );
+    // vex::thread interfaceThread = thread( refreshCompetitionStatus );
 }
 
 void autonomous(void) {
     OverseerBasis &overseer = OverseerBasis::getInstance();
-    overseer.operation(CommandType::Propel, 150.0);
+    // vex::thread interfaceThread = thread( spinIntake );
+    overseer.operation(CommandType::Propel, 600.0);
+    // overseer.operation(CommandType::Pivot, 148.2);
+    // overseer.operation(CommandType::Propel, 1235.4756169184);
+    // overseer.operation(CommandType::Pivot, -148.2);
+    // overseer.operation(CommandType::Propel, 750.0);
 }
 
 void userControl(void) {
+    autonomous();
+
+    while (true) {
+        wait(100, msec);
+    }
+
     Timekeeper timekeeperLocal(TimekeepingType::MinTime, 1.0, 5.0);
     
     // define buttons and callable functions
@@ -44,10 +58,18 @@ void userControl(void) {
     IntakePistonButton.pressed(triggerIntakePiston);
     
     // define buttons and state variables
+
+    // aozoraClientA
     auto IntakeButton = primaryController.ButtonL1;
     auto IntakeCounterspinButton = primaryController.ButtonR1;
     auto SpinnerButton = primaryController.ButtonL2;
     auto SpinnerCounterspinButton = primaryController.ButtonR2;
+
+    // aozoraClientB
+    // auto IntakeButton = primaryController.ButtonR1;
+    // auto IntakeCounterspinButton = primaryController.ButtonL1;
+    // auto SpinnerButton = primaryController.ButtonR2;
+    // auto SpinnerCounterspinButton = primaryController.ButtonL2;
 
     bool motorIntakeStopped = false;
     bool motorSpinnerStopped = false;
@@ -95,15 +117,6 @@ void userControl(void) {
 
         MotorLeftGroup.spin(forward, leftVelocity, rpm);
         MotorRightGroup.spin(forward, rightVelocity, rpm);
-
-        primaryBrain.Screen.setCursor(6, 1);
-        primaryBrain.Screen.print("                   MotorLeft POSIT: ");
-        primaryBrain.Screen.print(MotorLeftGroup.position(rev));
-        primaryBrain.Screen.print("                    ");
-        primaryBrain.Screen.setCursor(7, 1);
-        primaryBrain.Screen.print("                  MotorRight POSIT: ");
-        primaryBrain.Screen.print(MotorRightGroup.position(rev));
-        primaryBrain.Screen.print("                    ");
         
         auto endTime = timekeeperLocal.ending();
         wait(endTime, msec);
@@ -130,4 +143,5 @@ int main() {
         wait(100, msec);
     }
 }
+
 

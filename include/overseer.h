@@ -4,6 +4,7 @@
 // Written by Peter G.
 
 #pragma once
+#include "render.h"
 #include "math.h"
 #include "config.h"
 #include "timekeeper.h"
@@ -23,10 +24,18 @@ enum MotorGroupSide {
     Right = 1
 };
 
+class OverseerDataAggregator {
+    private:
+    
 
+    public:
+        
+
+
+};
 
 /// @brief Overseer utility data provisioning and processing class
-class OverseerDatacenter {
+class OverseerDataConnector {
     private:
         MotorGroupSide ActiveSide;
 
@@ -39,7 +48,7 @@ class OverseerDatacenter {
         double CurrentError = 0;
         double SummedError = 0;
         double RateBasedError = 0;
-        
+
         double previousErrorValue = 0;
         double previousElapsedTime = 0;
 
@@ -47,14 +56,11 @@ class OverseerDatacenter {
 
         Timekeeper timekeeperData = Timekeeper(TimekeepingType::Stopwatch);
 
-
-
-
         double positionLeftMaximum = 0;
         double positionRightMaximum = 0;
 
         void max(double* point, double data) {
-            if(*point < data) {
+            if (*point < data) {
                 *point = data;
             }
         }
@@ -63,7 +69,7 @@ class OverseerDatacenter {
 
 
         // angular displacement and eventual displacement derivation
-        
+
         /// @brief gets the average of three doubles
         /// @param doubleA first double
         /// @param doubleB second double
@@ -79,9 +85,9 @@ class OverseerDatacenter {
         /// @return displacement in millimeters
         double deriveDisplacement() {
             double totalRotationalDisplacement = 0.0;
-    
+
             // NOTE: we use revolutions for calculations, not degrees.
-            switch(ActiveSide) {
+            switch (ActiveSide) {
                 case MotorGroupSide::Left: {
                     totalRotationalDisplacement = deriveCubicAverage(MotorLeftFront.position(vex::rotationUnits::rev), MotorLeftMid.position(vex::rotationUnits::rev), MotorLeftBack.position(vex::rotationUnits::rev));
                     break;
@@ -90,11 +96,13 @@ class OverseerDatacenter {
                     totalRotationalDisplacement = deriveCubicAverage(MotorRightFront.position(vex::rotationUnits::rev), MotorRightMid.position(vex::rotationUnits::rev), MotorRightBack.position(vex::rotationUnits::rev));
                     break;
                 }
-                default: { break; }
+                default: {
+                    break;
+                }
             }
-            
+
             // average multiplied by the gear ratio to get actual travel per cent and
-            return(totalRotationalDisplacement * GearRatio * TravelDistance);
+            return (totalRotationalDisplacement * GearRatio * TotalTravelDistance);
         }
 
 
@@ -103,7 +111,7 @@ class OverseerDatacenter {
     public:
         /// @brief constructor for Datacenter with active side
         /// @param side active side
-        OverseerDatacenter(MotorGroupSide side) {
+        OverseerDataConnector(MotorGroupSide side) {
             this->ActiveSide = side;
         }
 
@@ -127,14 +135,11 @@ class OverseerDatacenter {
         /// @brief gets the relative error based on setpoint and actual covered
         /// @return relative error (mm)
         double getError() {
-            return(getSetpoint() - deriveDisplacement());
+            return (getSetpoint() - deriveDisplacement());
         }
         double getDisplacement() {
-            return(deriveDisplacement());
+            return (deriveDisplacement());
         }
-
-
-
 
         /// @brief resets the timekeeper
         void resetTimekeeper() {
@@ -143,6 +148,15 @@ class OverseerDatacenter {
 
         /// @brief resets the motor encoder positions
         void resetDrivetrainDatascope() {
+            rawCurrentError = 0.0;
+            rawSummedError = 0.0;
+            rawRateBasedError = 0.0;
+            CurrentError = 0.0;
+            SummedError = 0.0;
+            RateBasedError = 0.0;
+            previousErrorValue = 0.0;
+            previousElapsedTime = 0.0;
+
             switch (ActiveSide) {
                 case Left:
                     MotorLeftFront.resetPosition();
@@ -174,10 +188,10 @@ class OverseerDatacenter {
             Cycles++;
             double errorValue = getError();
             if (previousErrorValue == 0) previousErrorValue = errorValue;
-    
+
             rawCurrentError = errorValue;
             rawSummedError += errorValue;
-            
+
             auto elapsedTime = timekeeperData.ending();
             timekeeperData.destoreStart();
             timekeeperData.start();
@@ -190,7 +204,7 @@ class OverseerDatacenter {
                 rawRateBasedError = (previousErrorValue - errorValue) / elapsedTime;
                 previousElapsedTime = elapsedTime;
             }
-            
+
             CurrentError = ProportionalMultiplier * rawCurrentError;
             SummedError = IntegralMultiplier * rawSummedError;
             RateBasedError = DerivativeMultiplier * rawRateBasedError;
@@ -242,9 +256,6 @@ class OverseerDatacenter {
         }
 };
 
-
-
-
 /// @brief Overseer main access class
 class OverseerBasis {
     private:
@@ -252,13 +263,13 @@ class OverseerBasis {
 
         // central datacenter
         // TODO: Provision a datacenter with a pointer to the central timekeeper. You can make the timekeeper public.
-        OverseerDatacenter datacenterLeft = OverseerDatacenter(Left);
-        OverseerDatacenter datacenterRight = OverseerDatacenter(Right);
+        OverseerDataConnector datacenterLeft = OverseerDataConnector(Left);
+        OverseerDataConnector datacenterRight = OverseerDataConnector(Right);
 
 
         /// @brief evaluates if the stop conditions have been reached for this datacenter
         /// @return a boolean value of true if the autonomous control should halt immediately or not
-        bool evaluateStopCondition(OverseerDatacenter* datacenterGeneric) {
+        bool evaluateStopCondition(OverseerDataConnector* datacenterGeneric) {
             bool stopping = false;
             
             // error is within boundaries
@@ -273,7 +284,6 @@ class OverseerBasis {
 
         /// @brief runs the control loop until stop is issued
         void startControl() {
-            printf("RESET\n");
             // reset the drivetrain's position values
             datacenterLeft.resetDrivetrainDatascope();
             datacenterRight.resetDrivetrainDatascope();
@@ -293,11 +303,35 @@ class OverseerBasis {
                     return;
                 }
 
-                double leftCommand = datacenterLeft.deriveCommand();
+                double leftCommand = 0.0;
+                leftCommand = datacenterLeft.deriveCommand();
                 MotorLeftGroup.spin(forward, (LeftSkewMultiplier * leftCommand), vex::velocityUnits::rpm);
                 
-                double rightCommand = datacenterRight.deriveCommand();
+                double rightCommand = 0.0;
+                rightCommand = datacenterRight.deriveCommand();
                 MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
+
+                // // issue a stop when the error is below the threshold
+                // if (evaluateStopCondition(&datacenterLeft) && evaluateStopCondition(&datacenterRight)) {
+                //     primaryBrain.Screen.setFont(mono15);
+                //     primaryBrain.Screen.setOrigin(0, 60);
+                //     primaryBrain.Screen.setCursor(7 + 5, 1);
+                //     primaryBrain.Screen.print("               STOP COMMAND ISSUED: ");
+                //     primaryBrain.Screen.print("TRUE");
+                //     primaryBrain.Screen.print("                    ");
+                //     issueStop();
+                //     return;
+                // }
+
+                // if(!evaluateStopCondition(&datacenterLeft)) {
+                //     leftCommand = datacenterLeft.deriveCommand();
+                //     MotorLeftGroup.spin(forward, leftCommand, vex::velocityUnits::rpm);
+                // }
+                
+                // if(!evaluateStopCondition(&datacenterRight)) {
+                //     rightCommand = datacenterRight.deriveCommand();
+                //     MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
+                // }
 
 
                 printf("%f;", leftCommand);
@@ -325,13 +359,15 @@ class OverseerBasis {
         /// @brief issue a stop to the overseer control function as well as stopping the drivetrain of any commands.
         void issueStop() {
             stopIssue = true;
-            OverseerDatacenter::stopDrivetrain();
+            OverseerDataConnector::stopDrivetrain();
         }
         
         /// @brief Runs the operation until the setpoint has been reached or time outs
         /// @param commandType The type of command to operate
         /// @param setPoint The set point in MILLIMETERS OR in DEGREES depending on the type of the command
         void operation(CommandType commandType, double setpoint) {
+            stopIssue = false;
+
             switch (commandType) {
                 case Propel:
                     datacenterLeft.setSetpoint(setpoint);
