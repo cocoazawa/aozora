@@ -25,6 +25,53 @@ enum MotorGroupSide {
 };
 
 
+/// @brief This class, the OverseerDataAggregator has one job: it's to collect data from any possible sensors (except for the motor encoders) to generate an estimate of the current position through physics alone, and from sensor data.
+class OverseerDataAggregator {
+    private:
+        double aggregatedHorizontalOffset = 0;
+        double aggregatedVerticalOffset = 0;
+
+        double estimatedHorizontalOffset = 0;
+        double estimatedVerticalOffset = 0;
+
+        Timekeeper timekeeperAggregator = Timekeeper(TimekeepingType::Stopwatch);
+
+        OverseerDataAggregator() {
+            printf("[OVERSEER] OverseerDataAggregator instance created.\n");
+        }
+        
+        OverseerDataAggregator(OverseerDataAggregator const&);
+        void operator=(OverseerDataAggregator const&);
+
+        /// @brief Aggregates up-to-date information and updates the sensor-based estimate
+        void reAggregate() {
+            
+
+        }
+
+        void reEstimate() {
+
+        }
+
+    public:
+        /// @brief gets the singleton instance of the OverseerDataAggregator class
+        static OverseerDataAggregator& getInstance() {
+            static OverseerDataAggregator instance;
+            return instance;
+        }
+
+        static void runAggregation() {
+            OverseerDataAggregator &localAggregatorInstance = OverseerDataAggregator::getInstance();
+
+            while(true) {
+                localAggregatorInstance.reAggregate();
+
+
+            }
+        }
+};
+
+
 /// @brief Overseer utility data provisioning and processing class
 class OverseerDataConnector {
     private:
