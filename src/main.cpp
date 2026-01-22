@@ -18,10 +18,13 @@ void autonomousAuxilary() {
 }
 
 void preAutonomous(void) {
+    primaryController.rumble("...");
+    
+    // initialize vex components
     initializeVEX();
-    // primaryController.rumble(".");
-    // Hold off on rendering an official interface
-    // vex::thread interfaceThread = thread( refreshCompetitionStatus );
+
+    // initialize interface
+    vex::thread interfaceThread = thread( refreshCompetitionStatus );
 }
 
 void autonomous(void) {
