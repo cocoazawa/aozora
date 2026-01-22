@@ -24,15 +24,6 @@ enum MotorGroupSide {
     Right = 1
 };
 
-class OverseerDataAggregator {
-    private:
-    
-
-    public:
-        
-
-
-};
 
 /// @brief Overseer utility data provisioning and processing class
 class OverseerDataConnector {
