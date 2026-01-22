@@ -50,20 +50,6 @@ void userControl(void) {
     DescorePistonButton.pressed(triggerDescorePiston);
     RubberBandPistonButton.pressed(triggerRubberBandPiston);
     IntakePistonButton.pressed(triggerIntakePiston);
-    
-    // define buttons and state variables
-
-    // aozoraClientA
-    auto IntakeButton = primaryController.ButtonL1;
-    auto IntakeCounterspinButton = primaryController.ButtonR1;
-    auto SpinnerButton = primaryController.ButtonL2;
-    auto SpinnerCounterspinButton = primaryController.ButtonR2;
-
-    // aozoraClientB
-    // auto IntakeButton = primaryController.ButtonR1;
-    // auto IntakeCounterspinButton = primaryController.ButtonL1;
-    // auto SpinnerButton = primaryController.ButtonR2;
-    // auto SpinnerCounterspinButton = primaryController.ButtonL2;
 
     bool motorIntakeStopped = false;
     bool motorSpinnerStopped = false;
@@ -121,7 +107,7 @@ void userControl(void) {
 // Main will set up the competition functions and callbacks.
 //
 int main() {
-    printf("\n\naozora -- version %s -- by cocoazawa\n", aozoraVersion);
+    printf("\n\naozora -- version %s -- by cocoazawa for 76371M\n", aozoraVersion);
     printf("aozora -- profile %s\n\n\n", profileVersion);
     
     // Run the pre-autonomous function.
