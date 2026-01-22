@@ -46,15 +46,6 @@ void userControl(void) {
 
     Timekeeper timekeeperLocal(TimekeepingType::MinTime, 1.0, 5.0);
     
-    // define buttons and callable functions
-    auto DescorePistonButton = primaryController.ButtonA;
-    auto RubberBandPistonButton = primaryController.ButtonX;
-    auto IntakePistonButton = primaryController.ButtonB;
-    
-    auto triggerDescorePiston = []() { trigger(DescorePiston); };
-    auto triggerRubberBandPiston = []() { trigger(RubberBandPiston); };
-    auto triggerIntakePiston = []() { trigger(IntakePiston); };
-    
     // register 
     DescorePistonButton.pressed(triggerDescorePiston);
     RubberBandPistonButton.pressed(triggerRubberBandPiston);

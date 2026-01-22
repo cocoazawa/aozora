@@ -77,6 +77,15 @@ pneumatics DescorePiston(DescorePistonPort);
 pneumatics RubberBandPiston(RubberBandPistonPort);
 pneumatics IntakePiston(IntakePistonPort);
 
+// define buttons and callable functions for pistons
+auto DescorePistonButton = primaryController.ButtonA;
+auto RubberBandPistonButton = primaryController.ButtonX;
+auto IntakePistonButton = primaryController.ButtonB;
+
+auto triggerDescorePiston = []() { trigger(DescorePiston); };
+auto triggerRubberBandPiston = []() { trigger(RubberBandPiston); };
+auto triggerIntakePiston = []() { trigger(IntakePiston); };
+
 
 // drivetrain setup
 motor MotorLeftFront(PORT5, ratio6_1, false);
