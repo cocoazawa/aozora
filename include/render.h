@@ -53,6 +53,30 @@ void refreshCompetitionStatus() {
     // actual logging and other detailed information
     while (true) {
         timekeeper.start();
+
+        if (!Ready) {
+            screenRef.setFont(mono60);
+            screenRef.setOrigin(0, 60);
+
+            reporter.UpdateReport();
+
+            for (int clearIndex = 1; clearIndex < 20; clearIndex++) {
+                screenRef.clearLine(clearIndex);
+            }
+            
+        
+            screenRef.setCursor(1, 1);
+            screenRef.print("Initializing...");
+            screenRef.setCursor(2, 1);
+            screenRef.print("Do not move the robot. If you have moved the robot, rerun this program.");
+            screenRef.setCursor(3, 1);
+            screenRef.print("The robot is NOT READY. Do NOT place the robot inside the field");
+
+            screenRef.setOrigin(0, 0);
+            vex::this_thread::sleep_for(timekeeper.ending());
+
+            continue;
+        }
         
         screenRef.setFont(mono15);
         reporter.UpdateReport();

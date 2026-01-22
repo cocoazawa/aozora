@@ -26,6 +26,8 @@ static const char* aozoraVersion = "0.18.1";
 static const int adjustHorizontal = -10;
 static const int adjustVertical = -15;
 
+static bool Ready = false;
+
 
 // Overseer Calculation Values
 
@@ -101,18 +103,3 @@ controller primaryController = controller();
 // gyroscope object
 // introduced from aozora v0.16.1 for testing applications
 inertial primaryInertial(PORT11);
-
-
-
-void initializeVEX(void) {
-    MotorLeftFront.setBrake(vex::brakeType::coast);
-    MotorLeftMid.setBrake(vex::brakeType::coast);
-    MotorLeftBack.setBrake(vex::brakeType::coast);
-    MotorRightFront.setBrake(vex::brakeType::coast);
-    MotorRightMid.setBrake(vex::brakeType::coast);
-    MotorRightBack.setBrake(vex::brakeType::coast);
-    MotorSpinner.setBrake(vex::brakeType::coast);
-    MotorIntake.setBrake(vex::brakeType::coast);
-
-    primaryBrain.Screen.setOrigin(1, 40);
-}
