@@ -52,5 +52,16 @@ void initializeVEX(void) {
     MotorRightBack.setBrake(vex::brakeType::coast);
     MotorSpinner.setBrake(vex::brakeType::coast);
     MotorIntake.setBrake(vex::brakeType::coast);
+    
+    MotorLeftFront.resetPosition();
+    MotorLeftMid.resetPosition();
+    MotorLeftBack.resetPosition();
+    MotorRightFront.resetPosition();
+    MotorRightMid.resetPosition();
+    MotorRightBack.resetPosition();
+    MotorSpinner.resetPosition();
+    MotorIntake.resetPosition();
+
+    Ready = true;
 }
 

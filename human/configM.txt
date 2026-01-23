@@ -104,6 +104,11 @@ motor_group MotorRightGroup(MotorRightFront, MotorRightMid, MotorRightBack);
 motor MotorSpinner(PORT4, ratio6_1, true);
 motor MotorIntake(PORT3, ratio6_1, false);
 
+auto IntakeButton = primaryController.ButtonL1;
+auto IntakeCounterspinButton = primaryController.ButtonR1;
+auto SpinnerButton = primaryController.ButtonL2;
+auto SpinnerCounterspinButton = primaryController.ButtonR2;
+
 
 // introduce controller object (moved to allow for uniform access to one reference)
 controller primaryController = controller();
