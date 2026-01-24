@@ -14,6 +14,10 @@ brain primaryBrain;
 // introduce competition objects
 competition Competition;
 
+// introduce controller object (moved to allow for uniform access to one reference)
+controller primaryController = controller();
+
+
 
 static const char* aozoraVersion = "0.18.1";
 #define aozoraExperimental false
@@ -82,10 +86,6 @@ auto DescorePistonButton = primaryController.ButtonA;
 auto RubberBandPistonButton = primaryController.ButtonX;
 auto IntakePistonButton = primaryController.ButtonB;
 
-auto triggerDescorePiston = []() { trigger(DescorePiston); };
-auto triggerRubberBandPiston = []() { trigger(RubberBandPiston); };
-auto triggerIntakePiston = []() { trigger(IntakePiston); };
-
 
 // drivetrain setup
 motor MotorLeftFront(PORT5, ratio6_1, false);
@@ -110,10 +110,6 @@ auto SpinnerButton = primaryController.ButtonL2;
 auto SpinnerCounterspinButton = primaryController.ButtonR2;
 
 
-// introduce controller object (moved to allow for uniform access to one reference)
-controller primaryController = controller();
-
-
 // gyroscope object
 // introduced from aozora v0.16.1 for testing applications
-inertial primaryInertial(PORT11);
+inertial primaryInertial(PORT1);

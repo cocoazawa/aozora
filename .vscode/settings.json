@@ -31,5 +31,6 @@
 		"limits": "cpp",
 		"ratio": "cpp",
 		"type_traits": "cpp"
-	}
+	},
+	"C_Cpp.default.compilerPath": "${config:vexrobotics.vexcode.Cpp.Toolchain.Path}/clang/bin/clang"
 }

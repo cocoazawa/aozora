@@ -38,13 +38,17 @@ void autonomous(void) {
 }
 
 void userControl(void) {
-    // autonomous();
+    autonomous();
 
-    // while (true) {
-    //     wait(100, msec);
-    // }
+    while (true) {
+        wait(100, msec);
+    }
 
     Timekeeper timekeeperLocal(TimekeepingType::MinTime, 1.0, 5.0);
+
+    auto triggerDescorePiston = []() { trigger(DescorePiston); };
+    auto triggerRubberBandPiston = []() { trigger(RubberBandPiston); };
+    auto triggerIntakePiston = []() { trigger(IntakePiston); };
     
     // register 
     DescorePistonButton.pressed(triggerDescorePiston);
