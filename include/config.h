@@ -14,6 +14,10 @@ brain primaryBrain;
 // introduce competition objects
 competition Competition;
 
+// introduce controller object (moved to allow for uniform access to one reference)
+controller primaryController = controller();
+
+
 
 static const char* aozoraVersion = "0.18.1";
 #define aozoraExperimental false
@@ -25,6 +29,8 @@ static const char* aozoraVersion = "0.18.1";
 
 static const int adjustHorizontal = -10;
 static const int adjustVertical = -15;
+
+static bool Ready = false;
 
 
 // Overseer Calculation Values
@@ -75,6 +81,11 @@ pneumatics DescorePiston(DescorePistonPort);
 pneumatics RubberBandPiston(RubberBandPistonPort);
 pneumatics IntakePiston(IntakePistonPort);
 
+// define buttons and callable functions for pistons
+auto DescorePistonButton = primaryController.ButtonA;
+auto RubberBandPistonButton = primaryController.ButtonX;
+auto IntakePistonButton = primaryController.ButtonB;
+
 
 // drivetrain setup
 motor MotorLeftFront(PORT5, ratio6_1, false);
@@ -93,26 +104,12 @@ motor_group MotorRightGroup(MotorRightFront, MotorRightMid, MotorRightBack);
 motor MotorSpinner(PORT4, ratio6_1, true);
 motor MotorIntake(PORT3, ratio6_1, false);
 
-
-// introduce controller object (moved to allow for uniform access to one reference)
-controller primaryController = controller();
+auto IntakeButton = primaryController.ButtonL1;
+auto IntakeCounterspinButton = primaryController.ButtonR1;
+auto SpinnerButton = primaryController.ButtonL2;
+auto SpinnerCounterspinButton = primaryController.ButtonR2;
 
 
 // gyroscope object
 // introduced from aozora v0.16.1 for testing applications
-inertial primaryInertial(PORT11);
-
-
-
-void initializeVEX(void) {
-    MotorLeftFront.setBrake(vex::brakeType::coast);
-    MotorLeftMid.setBrake(vex::brakeType::coast);
-    MotorLeftBack.setBrake(vex::brakeType::coast);
-    MotorRightFront.setBrake(vex::brakeType::coast);
-    MotorRightMid.setBrake(vex::brakeType::coast);
-    MotorRightBack.setBrake(vex::brakeType::coast);
-    MotorSpinner.setBrake(vex::brakeType::coast);
-    MotorIntake.setBrake(vex::brakeType::coast);
-
-    primaryBrain.Screen.setOrigin(1, 40);
-}
+inertial primaryInertial(PORT1);

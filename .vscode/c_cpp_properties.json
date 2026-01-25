@@ -29,7 +29,7 @@
 			"includePath": [
 				"${vex_sdkIncludes}"
 			],
-			"compilerPath": "${vex_compilerPath}",
+			"compilerPath": "${config:vexrobotics.vexcode.Cpp.Toolchain.Path}/clang/bin/clang",
 			"cStandard": "gnu99",
 			"cppStandard": "gnu++11",
 			"intelliSenseMode": "macos-clang-x86"

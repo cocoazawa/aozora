@@ -6,59 +6,91 @@
 #pragma once
 #include <vex.h>
 #include <config.h>
-#include "report.h"
+#include <report.h>
+#include <string>
 
 using namespace vex;
 
-void log(int lineNumber, const char* value, ...) {
+
+void logTitleBanner() {
     vex::brain::lcd screenRef = primaryBrain.Screen;
+
+    if (aozoraTeamColor == red) {
+        screenRef.setPenColor("#D6162E");
+        screenRef.setFillColor("#D6162E");
+    } else if (aozoraTeamColor == blue) {
+        screenRef.setPenColor("#0068EE");
+        screenRef.setFillColor("#0068EE");
+    }
+
+    screenRef.drawRectangle(0, 0, 500, 100);
+    
+    screenRef.setFont(prop60);
+    screenRef.setPenColor("#FFFFFF");
+    screenRef.printAt(10, 50, true, "76371M");
+    
+    screenRef.setFont(fontType::mono20);
+    if (aozoraExperimental) {
+        screenRef.printAt(10, 75, false, "aozora (Experimental Build)");
+    } else {
+        screenRef.printAt(10, 75, false, "aozora");
+    }
+
+    screenRef.setFont(mono15);
+    screenRef.printAt(10, 90, false, "Built by @cocoazawa / St. Mary's International HS Robotics");
+
+    screenRef.setOrigin(0, 0);
+    screenRef.setPenColor("#FFFFFF");
+    screenRef.setFillColor(color(transparent));
 }
 
 
 void refreshCompetitionStatus() {
     int count = 0;
 
-    vex::brain::lcd screenRef = primaryBrain.Screen;
-
     Timekeeper timekeeper(TimekeepingType::MinTime, 0.0, 100.0);
     Reporter reporter;
 
-    // printing title banner
+    vex::brain::lcd screenRef = primaryBrain.Screen;
+    screenRef.clearScreen(black);
     screenRef.setOrigin(0, 0);
 
-    if (aozoraTeamColor == red) {
-        screenRef.setPenColor("#D6162E");
-        screenRef.setFillColor("#D6162E");
-        screenRef.drawRectangle(0, 0, 500, 40);
-    } else if (aozoraTeamColor == blue) {
-        screenRef.setPenColor("#0068EE");
-        screenRef.setFillColor("#0068EE");
-        screenRef.drawRectangle(0, 0, 500, 40);
-    }
-    
+    logTitleBanner();
+
+    screenRef.setOrigin(0, 120);
     screenRef.setPenColor("#FFFFFF");
-    screenRef.setFont(mono30);
-    screenRef.printAt(20, 30, false, "76371B [St. Mary's]");
-    
-    screenRef.setFont(mono15);
-    if (aozoraExperimental) {
-        screenRef.printAt(320, 20, false, "AOZORA^ex");
-    } else {
-        screenRef.printAt(320, 20, false, "AOZORA ");
-    }
-    screenRef.printAt(320, 30, false, "Peter W.G.");
-    
     screenRef.setFillColor(color(transparent));
+    screenRef.setFont(prop30);
+    
+    screenRef.setCursor(1,2);
+    screenRef.print("Initializing...");
+
+    screenRef.setFont(propM);
+    screenRef.setCursor(1, 20);
+    screenRef.print("Do NOT move or place the robot.");
+    screenRef.setCursor(2, 20);
+    screenRef.print("Rerun this program if moved.");
+
+    while (!Ready) {
+        wait(10, msec);
+    }
+
+    // printing title banner
+    screenRef.clearScreen(black);
+    screenRef.setOrigin(0, 0);
+
+    logTitleBanner();
 
     // actual logging and other detailed information
     while (true) {
         timekeeper.start();
-        
-        screenRef.setFont(mono15);
         reporter.UpdateReport();
 
-        screenRef.setOrigin(0, 60);
+        screenRef.setOrigin(0, 120);
+        screenRef.setPenColor("#FFFFFF");
+        screenRef.setFillColor(color(transparent));
         
+        screenRef.setFont(mono15);
         screenRef.setCursor(1, 1);
         screenRef.print("            Environment: ");
         if (Competition.isAutonomous()) {
@@ -86,17 +118,17 @@ void refreshCompetitionStatus() {
         screenRef.setCursor(3, 1);
         screenRef.print("        Inertial Sensor: ");
         if (reporter.report.inertialConnected && reporter.report.inertialCalibrating) {
-            screenRef.print("Calibrating...");
+            screenRef.print("Calibrating...  ");
         } else if (reporter.report.inertialConnected && !reporter.report.inertialCalibrating) {
-            screenRef.print("Performing");
+            screenRef.print("Performing  ");
         } else {
-            screenRef.print("Disconnected");
+            screenRef.print("Disconnected  ");
         }
         screenRef.print("                    ");
 
         screenRef.setCursor(4, 1);
         screenRef.print("       Battery Readings: ");
-        screenRef.print("%.0f%%, %.0f°C, %.3f amps, %.2f volts.    ", reporter.report.batteryPercentage, reporter.report.batteryTemperature, reporter.report.batteryCurrent, reporter.report.batteryVoltage);
+        screenRef.print("%.0f%%, %.0f°C, %.3f A, %.2f V    ", reporter.report.batteryPercentage, reporter.report.batteryTemperature, reporter.report.batteryCurrent, reporter.report.batteryVoltage);
         screenRef.print("                    ");
 
         screenRef.setCursor(5, 1);
