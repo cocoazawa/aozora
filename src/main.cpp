@@ -13,37 +13,36 @@
 
 using namespace vex;
 
-void autonomousAuxilary() {
-    MotorIntake.spin(forward, 600, rpm);
-}
-
 void preAutonomous(void) {
-    vex::thread interfaceThread = thread( refreshCompetitionStatus );
+    printf("Pre-Running Autonomous (1)...");
+    primaryController.rumble("...");
     
     // initialize vex components
     initializeVEX();
     
     // initialize interface
-    primaryController.rumble("...");
+    vex::thread interfaceThread = thread( refreshCompetitionStatus );
+
 }
 
 void autonomous(void) {
-    OverseerBasis &overseer = OverseerBasis::getInstance();
+    // start running aggregation
+    printf("Running Autonomous...");
+    
+    vex::thread aggregationThread = thread( OverseerDataAggregator::runAggregation );
+    
+    // OverseerBasis &overseer = OverseerBasis::getInstance();
+    
     // vex::thread interfaceThread = thread( spinIntake );
-    overseer.operation(CommandType::Propel, 600.0);
+    // overseer.operation(CommandType::Propel, 600.0);
     // overseer.operation(CommandType::Pivot, 148.2);
     // overseer.operation(CommandType::Propel, 1235.4756169184);
     // overseer.operation(CommandType::Pivot, -148.2);
     // overseer.operation(CommandType::Propel, 750.0);
+    // aggregationThread.interrupt();
 }
 
 void userControl(void) {
-    autonomous();
-
-    while (true) {
-        wait(100, msec);
-    }
-
     Timekeeper timekeeperLocal(TimekeepingType::MinTime, 1.0, 5.0);
 
     auto triggerDescorePiston = []() { trigger(DescorePiston); };
@@ -116,6 +115,13 @@ int main() {
     
     // Run the pre-autonomous function.
     preAutonomous();
+
+        
+    autonomous();
+
+    while (true) {
+        wait(100, msec);
+    }
 
 
     // Set up callbacks for autonomous and driver control periods.

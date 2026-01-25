@@ -34,7 +34,7 @@ class OverseerDataAggregator {
         double estimatedHorizontalOffset = 0;
         double estimatedVerticalOffset = 0;
 
-        Timekeeper timekeeperAggregator = Timekeeper(TimekeepingType::Stopwatch);
+        Timekeeper timekeeperAggregator = Timekeeper(TimekeepingType::MinTime, 0.1, 1.0);
 
         OverseerDataAggregator() {
             printf("[OVERSEER] OverseerDataAggregator instance created.\n");
@@ -45,8 +45,25 @@ class OverseerDataAggregator {
 
         /// @brief Aggregates up-to-date information and updates the sensor-based estimate
         void reAggregate() {
-            
+            timekeeperAggregator.start();
 
+            double ForwardAcceleration = primaryInertial.acceleration(xaxis) * 9.80665;
+            double SideAcceleration = primaryInertial.acceleration(yaxis) * 9.80665;
+            
+            
+            if (ForwardAcceleration != 0.0) {
+                printf("INERTIAL ACCEL HORIZ: ");
+                printf("%f;", ForwardAcceleration);
+                printf("\n");
+            }
+            if (SideAcceleration != 0.0) {
+                printf(" INERTIAL ACCEL SIDE TO SIDE: ");
+                printf("%f;", SideAcceleration);
+                printf("\n");
+            }
+            
+            auto waitTime = timekeeperAggregator.ending();
+            wait(waitTime, msec);
         }
 
         void reEstimate() {
@@ -60,13 +77,18 @@ class OverseerDataAggregator {
             return instance;
         }
 
+        /// @brief resets the timekeeper
+        void resetTimekeeper() {
+            timekeeperAggregator.storeStart(std::chrono::system_clock::now());
+        }
+
         static void runAggregation() {
             OverseerDataAggregator &localAggregatorInstance = OverseerDataAggregator::getInstance();
 
+            localAggregatorInstance.resetTimekeeper();
+
             while(true) {
                 localAggregatorInstance.reAggregate();
-
-
             }
         }
 };

@@ -19,7 +19,7 @@ controller primaryController = controller();
 
 
 
-static const char* aozoraVersion = "0.18.1";
+static const char* aozoraVersion = "0.20.0";
 #define aozoraExperimental false
 
 // Printing Values
