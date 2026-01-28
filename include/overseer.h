@@ -25,6 +25,12 @@ enum MotorGroupSide {
 };
 
 
+struct CoordinateOffsetDeltas {
+    double horizontalOffsetDelta;
+    double verticalOffsetDelta;
+};
+
+
 /// @brief This class, the OverseerDataAggregator has one job: it's to collect data from any possible sensors (except for the motor encoders) to generate an estimate of the current position through physics alone, and from sensor data.
 class OverseerDataAggregator {
     private:
