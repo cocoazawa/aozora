@@ -18,7 +18,6 @@ competition Competition;
 controller primaryController = controller();
 
 
-
 static const char* aozoraVersion = "0.20.0";
 #define aozoraExperimental false
 

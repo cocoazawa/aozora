@@ -14,7 +14,7 @@
 using namespace vex;
 
 void preAutonomous(void) {
-    printf("Pre-Running Autonomous (1)...");
+    printf("\n\nPre-Running Autonomous (1)...\n");
     primaryController.rumble("...");
     
     // initialize vex components
@@ -27,7 +27,7 @@ void preAutonomous(void) {
 
 void autonomous(void) {
     // start running aggregation
-    printf("Running Autonomous...");
+    printf("\n\nRunning Autonomous Phase\n");
     
     vex::thread aggregationThread = thread( OverseerDataAggregator::runAggregation );
     
@@ -43,6 +43,8 @@ void autonomous(void) {
 }
 
 void userControl(void) {
+    printf("\n\nRunning Driver Controlled Phase\n");
+
     Timekeeper timekeeperLocal(TimekeepingType::MinTime, 1.0, 5.0);
 
     auto triggerDescorePiston = []() { trigger(DescorePiston); };
@@ -116,17 +118,17 @@ int main() {
     // Run the pre-autonomous function.
     preAutonomous();
 
-        
-    autonomous();
 
-    while (true) {
-        wait(100, msec);
-    }
+    // Run autonomous in testing mode when the flag is set to true for that build.
+    printf("\n[WARN] aozora -- THIS BUILD RUNS AUTONOMOUS TESTING. PLEASE RUN WITH CAUTION.\n");
+    autonomous();
+    while (true) wait(100, msec);
 
 
     // Set up callbacks for autonomous and driver control periods.
     Competition.autonomous(autonomous);
     Competition.drivercontrol(userControl);
+
 
     // Prevent main from exiting with an infinite loop.
     while (true) {
