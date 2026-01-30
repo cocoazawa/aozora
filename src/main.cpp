@@ -42,6 +42,8 @@ void autonomous(void) {
     // aggregationThread.interrupt();
 }
 
+
+
 //
 // Main will set up the competition functions and callbacks.
 //
@@ -62,6 +64,7 @@ int main() {
 
 
     // Set up callbacks for autonomous and driver control periods.
+    // NOTE: `userControl` is from `control.h`
     Competition.autonomous(autonomous);
     Competition.drivercontrol(userControl);
 
