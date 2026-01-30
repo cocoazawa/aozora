@@ -149,24 +149,24 @@ void refreshCompetitionStatus() {
         
         
         
-        screenRef.setCursor(6, 1);
-        screenRef.print("EST POS: ");
-        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialHorizontal);
-        screenRef.print(", ");
-        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialVertical);
-        printf("%.2f, %.2f; ", OverseerDataAggregator::getInstance().PositionEstimate_InertialHorizontal, OverseerDataAggregator::getInstance().PositionEstimate_InertialVertical);
-        // screenRef.print(" // ");
+        // screenRef.setCursor(6, 1);
+        // screenRef.print("EST POS: ");
+        // // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialHorizontal);
+        // // screenRef.print(", ");
+        // // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialVertical);
+        // // printf("%.2f, %.2f; ", OverseerDataAggregator::getInstance().PositionEstimate_InertialHorizontal, OverseerDataAggregator::getInstance().PositionEstimate_InertialVertical);
+        // // // screenRef.print(" // ");
         // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainHorizontal);
         // screenRef.print(", ");
         // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainVertical);
-        screenRef.print("                                                                                                                        ");
+        // screenRef.print("                                                                                                                        ");
 
-        screenRef.setCursor(7, 1);
-        screenRef.print("EST HEAD: ");
-        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialHeading);
-        screenRef.print(" // ");
-        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainHeading);
-        screenRef.print("                                                                                                                                            ");
+        // screenRef.setCursor(7, 1);
+        // screenRef.print("EST HEAD: ");
+        // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialHeading);
+        // screenRef.print(" // ");
+        // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainHeading);
+        // screenRef.print("                                                                                                                                            ");
 
         screenRef.setOrigin(0, 0);
         vex::this_thread::sleep_for(timekeeper.ending());

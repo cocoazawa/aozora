@@ -32,16 +32,11 @@ void autonomous(void) {
     setDrivetrainBraking(vex::brakeType::hold);
     
     vex::thread aggregationThread = thread( OverseerDataAggregator::runAggregation );
-
-    wait(5, sec);
-
-    MotorLeftGroup.spinFor(forward, 2, rev, false);
-    MotorRightGroup.spinFor(forward, 2, rev, false);
     
-    // OverseerBasis &overseer = OverseerBasis::getInstance();
+    OverseerBasis &overseer = OverseerBasis::getInstance();
     
     // vex::thread interfaceThread = thread( spinIntake );
-    // overseer.operation(CommandType::Propel, 600.0);
+    overseer.operation(CommandType::Propel, 600.0);
     // overseer.operation(CommandType::Pivot, 148.2);
     // overseer.operation(CommandType::Propel, 1235.4756169184);
     // overseer.operation(CommandType::Pivot, -148.2);

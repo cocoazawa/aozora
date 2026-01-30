@@ -33,20 +33,10 @@ struct CoordinateOffsetDeltas {
 /// @brief This class, the OverseerDataAggregator has one job: it's to collect data from any possible sensors (except for the motor encoders) to generate an estimate of the current position through physics alone, and from sensor data.
 class OverseerDataAggregator {
     private:
-        double previousHorizontalOffset = 0;
         double previousVerticalOffset = 0;
         double previousHeading = 0;
         
-        
-        double aggregatedHorizontalOffset = 0;
-        double aggregatedVerticalOffset = 0;
-        double aggregatedHeading = 0;
-        
-        double aggregatedHorizontalVelocity = 0;
-        double aggregatedVerticalVelocity = 0;
-        
-        
-        double estimatedHorizontalOffset = 0;
+
         double estimatedVerticalOffset = 0;
         double estimatedHeading = 0;
 
@@ -140,49 +130,26 @@ class OverseerDataAggregator {
 
         // [AGGREGATE]
 
-        // TODO: REMOVE THIS
-        double aggregatedDrivetrainBasedHorizontalOffset = 0;
-        double aggregatedDrivetrainBasedVerticalOffset = 0;
-        double aggregatedDrivetrainBasedHeading = 0;
-
         /// @brief Aggregates up-to-date information and updates the sensor-based estimate
         void reAggregate() {
             timekeeperAggregator.start();
 
-            previousHorizontalOffset = aggregatedHorizontalOffset;
             previousVerticalOffset = aggregatedVerticalOffset;
+            previousHeading = aggregatedHeading;
 
             // NOTE: Inertial
-            CoordinateOffsetDeltas primaryInertialAccelerationDeltas = currentInertialAcceleration(primaryInertialObject, primaryInertial);
-            CoordinateOffsetDeltas secondaryInertialAccelerationDeltas = currentInertialAcceleration(secondaryInertialObject, secondaryInertial);
-            CoordinateOffsetDeltas tertiaryInertialAccelerationDeltas = currentInertialAcceleration(tertiaryInertialObject, tertiaryInertial);
-            double elapsedTime = timekeeperAggregatorMeasurementTime.ending();
-            timekeeperAggregatorMeasurementTime.destoreStart();
-            timekeeperAggregatorMeasurementTime.start();
             
-            
-            CoordinateOffsetDeltas totalInertialAccelerationDelta;
-            
-            totalInertialAccelerationDelta.horizontalOffsetDelta = (primaryInertialAccelerationDeltas.horizontalOffsetDelta + secondaryInertialAccelerationDeltas.horizontalOffsetDelta + tertiaryInertialAccelerationDeltas.horizontalOffsetDelta) / 3;
-            totalInertialAccelerationDelta.verticalOffsetDelta = (primaryInertialAccelerationDeltas.verticalOffsetDelta + secondaryInertialAccelerationDeltas.verticalOffsetDelta + tertiaryInertialAccelerationDeltas.verticalOffsetDelta) / 3;
-            
-            CoordinateOffsetDeltas inertialBasedOffset;
-            double inertialBasedHeading;
+            // i use... heading!
+            double inertialBasedHeading = (primaryInertialObject.heading() + secondaryInertialObject.heading() + tertiaryInertialObject.heading()) / 3;
 
-            // i use... verlet!!!
-            inertialBasedOffset.horizontalOffsetDelta = (2 * aggregatedHorizontalOffset) - previousHorizontalOffset + (totalInertialAccelerationDelta.horizontalOffsetDelta * 0.5 * pow((elapsedTime * 0.001), 2));
-            inertialBasedOffset.verticalOffsetDelta = (2 * aggregatedVerticalOffset) - previousVerticalOffset + (totalInertialAccelerationDelta.verticalOffsetDelta * 0.5 * pow((elapsedTime * 0.001), 2));
 
-            aggregatedHorizontalOffset = inertialBasedOffset.horizontalOffsetDelta;
-            aggregatedVerticalOffset = inertialBasedOffset.verticalOffsetDelta;
+            // NOTE: Encoders
+            // 68.5mm off
+            CoordinateOffsetDeltas encoderBasedOffset;
+            encoderBasedOffset.horizontalOffsetDelta = horizontalRotational.position(vex::rotationUnits::deg) * 159.5882;
+            encoderBasedOffset.verticalOffsetDelta = horizontalRotational.position(vex::rotationUnits::deg) * 159.5882;
 
-            // printf("H - %.2f\n", primaryInertialAccelerationDeltas.horizontalOffsetDelta);
-            // printf("V - %.2f\n", primaryInertialAccelerationDeltas.verticalOffsetDelta);
-            
-            // i use... whatever this is
-            inertialBasedHeading = (primaryInertialObject.heading() + secondaryInertialObject.heading() + tertiaryInertialObject.heading()) / 3;
-
-            
+            double encoderBasedHeading = encoderBasedOffset.horizontalOffsetDelta / (2 * M_PI * HorizontalEncoderCorDistance);
 
 
             // NOTE: Drivetrain
@@ -194,7 +161,7 @@ class OverseerDataAggregator {
 
             drivetrainBasedOffset.verticalOffsetDelta = leftDisplacement;
 
-            if (leftDisplacement != rightDisplacement) {
+            if (fabs(leftDisplacement - rightDisplacement) > 0.1) {
                 double radiusOfArc = (leftDisplacement * TotalMachineDiameter) / (leftDisplacement - rightDisplacement);
                 double arcAngle = (180 * leftDisplacement) / (M_PI * radiusOfArc);
     
@@ -207,42 +174,24 @@ class OverseerDataAggregator {
                 drivetrainBasedOffset.horizontalOffsetDelta = hypotenuseOfArc - partialExcessHorizontal;
             }
 
-            aggregatedDrivetrainBasedHorizontalOffset += drivetrainBasedOffset.horizontalOffsetDelta;
+            double aggregatedDrivetrainBasedVerticalOffset = aggregatedVerticalOffset;
+            double aggregatedDrivetrainBasedHeading = aggregatedHeading;
+
             aggregatedDrivetrainBasedVerticalOffset += drivetrainBasedOffset.verticalOffsetDelta;
             aggregatedDrivetrainBasedHeading += drivetrainBasedHeadingOffset;
 
-            PositionEstimate_InertialHorizontal = inertialBasedOffset.horizontalOffsetDelta;
-            PositionEstimate_InertialVertical = inertialBasedOffset.verticalOffsetDelta;
-            PositionEstimate_InertialHeading = inertialBasedHeading;
-            PositionEstimate_DrivetrainHorizontal = 0;
-            PositionEstimate_DrivetrainVertical = 0;
-            PositionEstimate_DrivetrainHeading = 0;
-
-
+            aggregatedVerticalOffset = encoderBasedOffset.verticalOffsetDelta * relianceDisplacementEncoders + aggregatedDrivetrainBasedVerticalOffset * relianceDisplacementDrivetrain;
+            aggregatedHeading = inertialBasedHeading * relianceHeadingInertial + encoderBasedHeading * relianceHeadingEncoders + aggregatedDrivetrainBasedHeading * relianceHeadingDrivetrain;
+            
             auto waitTime = timekeeperAggregator.ending();
             wait(waitTime, msec);
         }
 
-        void reEstimate() {
-
-        }
-
-
-
-
-
-
-
 
 
     public:
-        double PositionEstimate_InertialHorizontal = 0;
-        double PositionEstimate_InertialVertical = 0;
-        double PositionEstimate_InertialHeading = 0;
-
-        double PositionEstimate_DrivetrainHorizontal = 0;
-        double PositionEstimate_DrivetrainVertical = 0;
-        double PositionEstimate_DrivetrainHeading = 0;
+        double aggregatedVerticalOffset = 0;
+        double aggregatedHeading = 0;
 
 
         /// @brief gets the singleton instance of the OverseerDataAggregator class
@@ -273,6 +222,7 @@ class OverseerDataAggregator {
 class OverseerDataConnector {
     private:
         double Setpoint = 0;
+        CommandType Commanding = Propel;
 
         double rawCurrentError = 0;
         double rawSummedError = 0;
@@ -294,7 +244,14 @@ class OverseerDataConnector {
 
 
         double deriveDisplacement() {
-            return 0;
+            switch (Commanding) {
+                case Propel:
+                    return OverseerDataAggregator::getInstance().aggregatedVerticalOffset;
+                    break;
+                case Pivot:
+                    return OverseerDataAggregator::getInstance().aggregatedHeading;
+                    break;
+            }
         }
 
 
@@ -309,10 +266,16 @@ class OverseerDataConnector {
         double getSetpoint() {
             return this->Setpoint;
         }
+        /// @brief gets the current command type
+        /// @return command type (CommandType)
+        double getCommandType() {
+            return this->Commanding;
+        }
         /// @brief sets the setpoint
         /// @param newSetpoint new setpoint (mm)
-        void setSetpoint(double newSetpoint) {
+        void setSetpoint(double newSetpoint, CommandType commandType) {
             Setpoint = newSetpoint;
+            Commanding = commandType;
         }
 
         /// @brief gets the relative error based on setpoint and actual covered
@@ -555,17 +518,8 @@ class OverseerBasis {
         /// @param setPoint The set point in MILLIMETERS OR in DEGREES depending on the type of the command
         void operation(CommandType commandType, double setpoint) {
             stopIssue = false;
-
-            switch (commandType) {
-                case Propel:
-                    dataConnector.setSetpoint(setpoint);
-                    break;
-                    default:
-                    double dialedSetpoint = (abs(setpoint) / 360.0) * M_PI * 2 * (TotalMachineDiameter / 2);
-                    dataConnector.setSetpoint(setpoint);
-                    break;
-            }
-
+            
+            dataConnector.setSetpoint(setpoint, commandType);
             dataConnector.resetTimekeeper();
 
             startControl();

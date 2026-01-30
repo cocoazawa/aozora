@@ -48,6 +48,13 @@ static const double TotalTravelDistance = 260;
 static const double GearRatio = 36.0 / 60.0;
 
 
+// Gains Based Filter configurations
+static const double relianceHeadingInertial = 0.8;
+static const double relianceHeadingEncoders = 0.15;
+static const double relianceHeadingDrivetrain = 0.05;
+
+static const double relianceDisplacementEncoders = 0.7;
+static const double relianceDisplacementDrivetrain = 0.3;
 
 
 
@@ -115,6 +122,13 @@ auto SpinnerButton = primaryController.ButtonL2;
 auto SpinnerCounterspinButton = primaryController.ButtonR2;
 
 
+// rotation sensor
+rotation horizontalRotational = rotation(PORT20, false);
+rotation verticalRotational = rotation(PORT18, false);
+
+static const double HorizontalEncoderCorDistance = 68.5; // mm
+
+
 // gyroscope object
 // introduced from aozora v0.16.1 for testing applications
 inertial primaryInertialObject(PORT15);
@@ -124,4 +138,7 @@ inertial tertiaryInertialObject(PORT13);
 InertialWrapper primaryInertial = InertialWrapper(primaryInertialObject, 10.0, 10.0, InertialOrientation::FacingRight);
 InertialWrapper secondaryInertial = InertialWrapper(secondaryInertialObject, 10.0, 10.0, InertialOrientation::FacingRight);
 InertialWrapper tertiaryInertial = InertialWrapper(tertiaryInertialObject, 10.0, 10.0, InertialOrientation::FacingLeft);
+
+
+
 
