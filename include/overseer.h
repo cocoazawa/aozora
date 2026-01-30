@@ -429,27 +429,25 @@ class OverseerBasis {
 
             // remain in control until a stop has been issued
             while (stopIssue != true) {
+                // issue a stop when the error is below the threshold
+                if (evaluateStopCondition(&dataConnector)) {
+                    primaryBrain.Screen.setFont(mono15);
+                    primaryBrain.Screen.setOrigin(0, 60);
+                    primaryBrain.Screen.setCursor(7 + 5, 1);
+                    primaryBrain.Screen.print("               STOP COMMAND ISSUED: ");
+                    primaryBrain.Screen.print("TRUE");
+                    primaryBrain.Screen.print("                    ");
+                    issueStop();
+                    return;
+                }
 
-                stopIssue = true;
-                // // issue a stop when the error is below the threshold
-                // if (evaluateStopCondition(&datacenterLeft) && evaluateStopCondition(&datacenterRight)) {
-                //     primaryBrain.Screen.setFont(mono15);
-                //     primaryBrain.Screen.setOrigin(0, 60);
-                //     primaryBrain.Screen.setCursor(7 + 5, 1);
-                //     primaryBrain.Screen.print("               STOP COMMAND ISSUED: ");
-                //     primaryBrain.Screen.print("TRUE");
-                //     primaryBrain.Screen.print("                    ");
-                //     issueStop();
-                //     return;
-                // }
-
-                // double leftCommand = 0.0;
-                // leftCommand = datacenterLeft.deriveCommand();
-                // MotorLeftGroup.spin(forward, (LeftSkewMultiplier * leftCommand), vex::velocityUnits::rpm);
+                double command = 0.0;
+                command = dataConnector.deriveCommand();
+                MotorLeftGroup.spin(forward, (LeftSkewMultiplier * command), vex::velocityUnits::rpm);
+                MotorRightGroup.spin(forward, command, vex::velocityUnits::rpm);
                 
                 // double rightCommand = 0.0;
                 // rightCommand = datacenterRight.deriveCommand();
-                // MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
 
                 // // issue a stop when the error is below the threshold
                 // if (evaluateStopCondition(&datacenterLeft) && evaluateStopCondition(&datacenterRight)) {
