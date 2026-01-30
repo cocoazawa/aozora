@@ -16,17 +16,15 @@ class Timekeeper {
     private:
         bool storedStart = false;
 
-        std::chrono::_V2::system_clock::time_point startPoint;
-        std::chrono::_V2::system_clock::time_point endPoint;
+        std::chrono::system_clock::time_point startPoint;
+        std::chrono::system_clock::time_point endPoint;
 
         double minPoint;
         double setPoint;
         TimekeepingType timekeepingType;
 
         double convertDurationToMilliseconds(std::chrono::duration<double> someDuration) {
-            std::chrono::nanoseconds someDurationMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(someDuration);
-            double resultingCalculation = someDurationMilliseconds.count() / 1000000;
-            return resultingCalculation;
+            return std::chrono::duration<double, std::milli>(someDuration).count();
         }
     
     public:
@@ -43,7 +41,7 @@ class Timekeeper {
         /// @brief constructor for supplying the start time for use in calculations
         /// @param timekeepingType timekeeping type
         /// @param startTimeSupplied start point (usually for stopwatches)
-        Timekeeper(TimekeepingType givenTimekeepingType, std::chrono::_V2::system_clock::time_point startTimeSupplied) {
+        Timekeeper(TimekeepingType givenTimekeepingType, std::chrono::system_clock::time_point startTimeSupplied) {
             timekeepingType = givenTimekeepingType;
             startPoint = startTimeSupplied;
         }
@@ -67,9 +65,9 @@ class Timekeeper {
 
         /// @brief store an arbitrary time to use as the starting point
         /// @param timeToStore arbitrary time
-        void storeStart(std::chrono::_V2::system_clock::time_point timeToStore) {
+        void storeStart(std::chrono::system_clock::time_point timeToStore) {
             storedStart = true;
-            startPoint = std::chrono::system_clock::now();
+            startPoint = timeToStore;
         }
 
         /// @brief unlock the stored time variable

@@ -170,8 +170,8 @@ class OverseerDataAggregator {
             double inertialBasedHeading;
 
             // i use... verlet!!!
-            inertialBasedOffset.horizontalOffsetDelta = (2 * aggregatedHorizontalOffset) - previousHorizontalOffset + (totalInertialAccelerationDelta.horizontalOffsetDelta * 0.5 * pow(elapsedTime, 2));
-            inertialBasedOffset.verticalOffsetDelta = (2 * aggregatedVerticalOffset) - previousVerticalOffset + (totalInertialAccelerationDelta.horizontalOffsetDelta * 0.5 * pow(elapsedTime, 2));
+            inertialBasedOffset.horizontalOffsetDelta = (2 * aggregatedHorizontalOffset) - previousHorizontalOffset + (totalInertialAccelerationDelta.horizontalOffsetDelta * 0.5 * pow((elapsedTime * 0.001), 2));
+            inertialBasedOffset.verticalOffsetDelta = (2 * aggregatedVerticalOffset) - previousVerticalOffset + (totalInertialAccelerationDelta.verticalOffsetDelta * 0.5 * pow((elapsedTime * 0.001), 2));
 
             aggregatedHorizontalOffset = inertialBasedOffset.horizontalOffsetDelta;
             aggregatedVerticalOffset = inertialBasedOffset.verticalOffsetDelta;
@@ -187,7 +187,7 @@ class OverseerDataAggregator {
 
             // NOTE: Drivetrain
             double leftDisplacement = deriveDisplacement(MotorGroupSide::Left);
-            double rightDisplacement = deriveDisplacement(MotorGroupSide::Left);
+            double rightDisplacement = deriveDisplacement(MotorGroupSide::Right);
 
             CoordinateOffsetDeltas drivetrainBasedOffset;
             double drivetrainBasedHeadingOffset = 0;
