@@ -4,7 +4,6 @@
 // For `aozora`
 
 #pragma once
-#include "render.h"
 #include "math.h"
 #include "config.h"
 #include "timekeeper.h"
@@ -141,11 +140,16 @@ class OverseerDataAggregator {
 
         // [AGGREGATE]
 
+        // TODO: REMOVE THIS
+        double aggregatedDrivetrainBasedHorizontalOffset = 0;
+        double aggregatedDrivetrainBasedVerticalOffset = 0;
+        double aggregatedDrivetrainBasedHeading = 0;
+
         /// @brief Aggregates up-to-date information and updates the sensor-based estimate
         void reAggregate() {
             timekeeperAggregator.start();
 
-            // NOTE: INERTIAL
+            // NOTE: Inertial
             double elapsedTime = timekeeperAggregatorMeasurementTime.ending();
             if (!measurementTimeStarted) elapsedTime = 0;
             CoordinateOffsetDeltas primaryInertialAccelerationDeltas = currentInertialAcceleration(primaryInertialObject, primaryInertial);
@@ -177,7 +181,7 @@ class OverseerDataAggregator {
             double rightDisplacement = deriveDisplacement(MotorGroupSide::Left);
 
             CoordinateOffsetDeltas drivetrainBasedOffset;
-            double headingOffset = 0;
+            double drivetrainBasedHeadingOffset = 0;
 
             inertialBasedOffset.verticalOffsetDelta = leftDisplacement;
 
@@ -185,7 +189,7 @@ class OverseerDataAggregator {
                 double radiusOfArc = (leftDisplacement * TotalMachineDiameter) / (leftDisplacement - rightDisplacement);
                 double arcAngle = (180 * leftDisplacement) / (M_PI * radiusOfArc);
     
-                headingOffset = arcAngle;
+                drivetrainBasedHeadingOffset = arcAngle;
     
                 double hypotenuseOfArc = radiusOfArc - (TotalMachineDiameter / 2);
                 drivetrainBasedOffset.verticalOffsetDelta = sin(arcAngle * M_PI / 180) * hypotenuseOfArc;
@@ -193,6 +197,17 @@ class OverseerDataAggregator {
                 double partialExcessHorizontal = (drivetrainBasedOffset.verticalOffsetDelta * sin((90 - arcAngle) * M_PI / 180)) / sin(arcAngle * M_PI / 180);
                 drivetrainBasedOffset.horizontalOffsetDelta = hypotenuseOfArc - partialExcessHorizontal;
             }
+
+            aggregatedDrivetrainBasedHorizontalOffset += drivetrainBasedOffset.horizontalOffsetDelta;
+            aggregatedDrivetrainBasedVerticalOffset += drivetrainBasedOffset.verticalOffsetDelta;
+            aggregatedDrivetrainBasedHeading += drivetrainBasedHeadingOffset;
+
+            PositionEstimate_InertialHorizontal = inertialBasedOffset.horizontalOffsetDelta;
+            PositionEstimate_InertialVertical = inertialBasedOffset.verticalOffsetDelta;
+            PositionEstimate_InertialHeading = inertialBasedHeading;
+            PositionEstimate_DrivetrainHorizontal = aggregatedDrivetrainBasedHorizontalOffset;
+            PositionEstimate_DrivetrainVertical = aggregatedDrivetrainBasedVerticalOffset;
+            PositionEstimate_DrivetrainHeading = aggregatedDrivetrainBasedHeading;
 
 
             auto waitTime = timekeeperAggregator.ending();
@@ -212,6 +227,15 @@ class OverseerDataAggregator {
 
 
     public:
+        double PositionEstimate_InertialHorizontal = 0;
+        double PositionEstimate_InertialVertical = 0;
+        double PositionEstimate_InertialHeading = 0;
+
+        double PositionEstimate_DrivetrainHorizontal = 0;
+        double PositionEstimate_DrivetrainVertical = 0;
+        double PositionEstimate_DrivetrainHeading = 0;
+
+
         /// @brief gets the singleton instance of the OverseerDataAggregator class
         static OverseerDataAggregator& getInstance() {
             static OverseerDataAggregator instance;

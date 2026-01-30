@@ -8,6 +8,7 @@
 #include <config.h>
 #include <report.h>
 #include <string>
+#include "overseer.h"
 
 using namespace vex;
 
@@ -142,6 +143,28 @@ void refreshCompetitionStatus() {
         } else {
             screenRef.print("Connection issues (?)");
         }
+        screenRef.print("                    ");
+        
+        
+        
+        
+        
+        screenRef.setCursor(6, 1);
+        screenRef.print("EST POS: ");
+        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialHorizontal);
+        screenRef.print(", ");
+        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialVertical);
+        screenRef.print(" // ");
+        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainHorizontal);
+        screenRef.print(", ");
+        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainVertical);
+        screenRef.print("                    ");
+
+        screenRef.setCursor(7, 1);
+        screenRef.print("EST HEAD: ");
+        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialHeading);
+        screenRef.print(" // ");
+        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainHeading);
         screenRef.print("                    ");
 
         screenRef.setOrigin(0, 0);
