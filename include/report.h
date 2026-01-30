@@ -12,6 +12,10 @@ using namespace vex;
 struct Report {
     bool inertialConnected;
     bool inertialCalibrating;
+    bool secondartInertialConnected;
+    bool inertialCalibrating;
+    bool inertialConnected;
+    bool inertialCalibrating;
     float batteryPercentage;
     float batteryTemperature;
     float batteryCurrent;
@@ -24,8 +28,8 @@ class Reporter {
     Report report;
 
     void UpdateReport() {
-        const bool preeminentInertialConnected = primaryInertial.installed();
-        const bool preeminentInertialCalibrating = primaryInertial.isCalibrating();
+        const bool preeminentInertialConnected = false;
+        const bool preeminentInertialCalibrating = false;
 
         const float preeminentBatteryCapacity = primaryBrain.Battery.capacity(vex::percent);
         const float preeminentBatteryTemperature = primaryBrain.Battery.temperature(vex::celsius);

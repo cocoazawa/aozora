@@ -5,6 +5,7 @@
 
 #pragma once
 #include "vex.h"
+#include "inertial.h"
 
 using namespace vex;
 
@@ -18,8 +19,13 @@ competition Competition;
 controller primaryController = controller();
 
 
-static const char* aozoraVersion = "0.20.0";
+
 #define aozoraExperimental false
+
+static const char* aozoraVersion = "0.20.0";
+static const bool AUTONOMOUS_TEST_FLAG = false;
+
+
 
 // Printing Values
 
@@ -111,4 +117,11 @@ auto SpinnerCounterspinButton = primaryController.ButtonR2;
 
 // gyroscope object
 // introduced from aozora v0.16.1 for testing applications
-inertial primaryInertial(PORT1);
+inertial primaryInertialObject(PORT1);
+inertial secondaryInertialObject(PORT2);
+inertial tertiaryInertialObject(PORT3);
+
+InertialWrapper primaryInertial = InertialWrapper(primaryInertialObject, 10.0, 10.0, 90.0);
+InertialWrapper secondaryInertial = InertialWrapper(secondaryInertialObject, 10.0, 10.0, 90.0);
+InertialWrapper tertiaryInertial = InertialWrapper(tertiaryInertialObject, 10.0, 10.0, 270.0);
+

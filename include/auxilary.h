@@ -36,14 +36,11 @@ void trigger(vex::digital_out &peripheral) {
 }
 
 
-
 void initializeVEX(void) {
     primaryInertial.calibrate();
+    secondaryInertial.calibrate();
+    tertiaryInertial.calibrate();
 
-    while (primaryInertial.isCalibrating()) {
-        wait(5, msec);
-    }
-    
     MotorLeftFront.setBrake(vex::brakeType::coast);
     MotorLeftMid.setBrake(vex::brakeType::coast);
     MotorLeftBack.setBrake(vex::brakeType::coast);

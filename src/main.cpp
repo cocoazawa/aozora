@@ -120,9 +120,11 @@ int main() {
 
 
     // Run autonomous in testing mode when the flag is set to true for that build.
-    printf("\n[WARN] aozora -- THIS BUILD RUNS AUTONOMOUS TESTING. PLEASE RUN WITH CAUTION.\n");
-    autonomous();
-    while (true) wait(100, msec);
+    if (AUTONOMOUS_TEST_FLAG) {
+        printf("\n[WARN] aozora -- THIS BUILD RUNS AUTONOMOUS TESTING. PLEASE RUN WITH CAUTION.\n");
+        autonomous();
+        while (true) wait(100, msec);
+    }
 
 
     // Set up callbacks for autonomous and driver control periods.

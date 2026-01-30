@@ -53,20 +53,8 @@ class OverseerDataAggregator {
         void reAggregate() {
             timekeeperAggregator.start();
 
-            double ForwardAcceleration = primaryInertial.acceleration(xaxis) * 9.80665;
-            double SideAcceleration = primaryInertial.acceleration(yaxis) * 9.80665;
-            
-            
-            if (ForwardAcceleration != 0.0) {
-                printf("INERTIAL ACCEL HORIZ: ");
-                printf("%f;", ForwardAcceleration);
-                printf("\n");
-            }
-            if (SideAcceleration != 0.0) {
-                printf(" INERTIAL ACCEL SIDE TO SIDE: ");
-                printf("%f;", SideAcceleration);
-                printf("\n");
-            }
+            double ForwardAcceleration = primaryInertialObject.acceleration(xaxis) * 9.80665;
+            double SideAcceleration = primaryInertialObject.acceleration(yaxis) * 9.80665;
             
             auto waitTime = timekeeperAggregator.ending();
             wait(waitTime, msec);
