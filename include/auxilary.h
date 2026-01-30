@@ -35,6 +35,12 @@ void trigger(vex::digital_out &peripheral) {
     }
 }
 
+void max(double* point, double data) {
+    if (*point < data) {
+        *point = data;
+    }
+}
+
 
 void initializeVEX(void) {
     primaryInertial.calibrate();

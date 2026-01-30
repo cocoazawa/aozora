@@ -113,14 +113,6 @@ class OverseerDataConnector {
         double positionLeftMaximum = 0;
         double positionRightMaximum = 0;
 
-        void max(double* point, double data) {
-            if (*point < data) {
-                *point = data;
-            }
-        }
-
-
-
 
         // angular displacement and eventual displacement derivation
 
