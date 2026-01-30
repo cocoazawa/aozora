@@ -131,7 +131,7 @@ void refreshCompetitionStatus() {
         }
         screenRef.print("                    ");
 
-        screenRef.setCursor(3, 1);
+        screenRef.setCursor(4, 1);
         screenRef.print("       Battery Readings: ");
         screenRef.print("%.0f%%, %.0f°C, %.3f A, %.2f V    ", reporter.report.batteryPercentage, reporter.report.batteryTemperature, reporter.report.batteryCurrent, reporter.report.batteryVoltage);
         screenRef.print("                    ");
@@ -154,18 +154,19 @@ void refreshCompetitionStatus() {
         screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialHorizontal);
         screenRef.print(", ");
         screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialVertical);
-        screenRef.print(" // ");
-        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainHorizontal);
-        screenRef.print(", ");
-        screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainVertical);
-        screenRef.print("                    ");
+        printf("%.2f, %.2f; ", OverseerDataAggregator::getInstance().PositionEstimate_InertialHorizontal, OverseerDataAggregator::getInstance().PositionEstimate_InertialVertical);
+        // screenRef.print(" // ");
+        // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainHorizontal);
+        // screenRef.print(", ");
+        // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainVertical);
+        screenRef.print("                                                                                                                        ");
 
         screenRef.setCursor(7, 1);
         screenRef.print("EST HEAD: ");
         screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialHeading);
         screenRef.print(" // ");
         screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainHeading);
-        screenRef.print("                    ");
+        screenRef.print("                                                                                                                                            ");
 
         screenRef.setOrigin(0, 0);
         vex::this_thread::sleep_for(timekeeper.ending());

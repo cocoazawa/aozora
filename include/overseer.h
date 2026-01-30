@@ -149,12 +149,15 @@ class OverseerDataAggregator {
         void reAggregate() {
             timekeeperAggregator.start();
 
+            previousHorizontalOffset = aggregatedHorizontalOffset;
+            previousVerticalOffset = aggregatedVerticalOffset;
+
             // NOTE: Inertial
-            double elapsedTime = timekeeperAggregatorMeasurementTime.ending();
-            if (!measurementTimeStarted) elapsedTime = 0;
             CoordinateOffsetDeltas primaryInertialAccelerationDeltas = currentInertialAcceleration(primaryInertialObject, primaryInertial);
             CoordinateOffsetDeltas secondaryInertialAccelerationDeltas = currentInertialAcceleration(secondaryInertialObject, secondaryInertial);
             CoordinateOffsetDeltas tertiaryInertialAccelerationDeltas = currentInertialAcceleration(tertiaryInertialObject, tertiaryInertial);
+            double elapsedTime = timekeeperAggregatorMeasurementTime.ending();
+            timekeeperAggregatorMeasurementTime.destoreStart();
             timekeeperAggregatorMeasurementTime.start();
             
             
@@ -167,8 +170,14 @@ class OverseerDataAggregator {
             double inertialBasedHeading;
 
             // i use... verlet!!!
-            inertialBasedOffset.horizontalOffsetDelta = (2 * aggregatedHorizontalOffset) - previousHorizontalOffset + (totalInertialAccelerationDelta.horizontalOffsetDelta * 0.5 * elapsedTime);
-            inertialBasedOffset.verticalOffsetDelta = (2 * aggregatedVerticalOffset) - previousVerticalOffset + (totalInertialAccelerationDelta.horizontalOffsetDelta * 0.5 * elapsedTime);
+            inertialBasedOffset.horizontalOffsetDelta = (2 * aggregatedHorizontalOffset) - previousHorizontalOffset + (totalInertialAccelerationDelta.horizontalOffsetDelta * 0.5 * pow(elapsedTime, 2));
+            inertialBasedOffset.verticalOffsetDelta = (2 * aggregatedVerticalOffset) - previousVerticalOffset + (totalInertialAccelerationDelta.horizontalOffsetDelta * 0.5 * pow(elapsedTime, 2));
+
+            aggregatedHorizontalOffset = inertialBasedOffset.horizontalOffsetDelta;
+            aggregatedVerticalOffset = inertialBasedOffset.verticalOffsetDelta;
+
+            // printf("H - %.2f\n", primaryInertialAccelerationDeltas.horizontalOffsetDelta);
+            // printf("V - %.2f\n", primaryInertialAccelerationDeltas.verticalOffsetDelta);
             
             // i use... whatever this is
             inertialBasedHeading = (primaryInertialObject.heading() + secondaryInertialObject.heading() + tertiaryInertialObject.heading()) / 3;
@@ -183,7 +192,7 @@ class OverseerDataAggregator {
             CoordinateOffsetDeltas drivetrainBasedOffset;
             double drivetrainBasedHeadingOffset = 0;
 
-            inertialBasedOffset.verticalOffsetDelta = leftDisplacement;
+            drivetrainBasedOffset.verticalOffsetDelta = leftDisplacement;
 
             if (leftDisplacement != rightDisplacement) {
                 double radiusOfArc = (leftDisplacement * TotalMachineDiameter) / (leftDisplacement - rightDisplacement);
@@ -205,9 +214,9 @@ class OverseerDataAggregator {
             PositionEstimate_InertialHorizontal = inertialBasedOffset.horizontalOffsetDelta;
             PositionEstimate_InertialVertical = inertialBasedOffset.verticalOffsetDelta;
             PositionEstimate_InertialHeading = inertialBasedHeading;
-            PositionEstimate_DrivetrainHorizontal = aggregatedDrivetrainBasedHorizontalOffset;
-            PositionEstimate_DrivetrainVertical = aggregatedDrivetrainBasedVerticalOffset;
-            PositionEstimate_DrivetrainHeading = aggregatedDrivetrainBasedHeading;
+            PositionEstimate_DrivetrainHorizontal = 0;
+            PositionEstimate_DrivetrainVertical = 0;
+            PositionEstimate_DrivetrainHeading = 0;
 
 
             auto waitTime = timekeeperAggregator.ending();
@@ -245,6 +254,7 @@ class OverseerDataAggregator {
         /// @brief resets the timekeeper
         void resetTimekeeper() {
             timekeeperAggregator.storeStart(std::chrono::system_clock::now());
+            timekeeperAggregatorMeasurementTime.storeStart(std::chrono::system_clock::now());
         }
 
         static void runAggregation() {

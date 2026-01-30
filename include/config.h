@@ -22,8 +22,8 @@ controller primaryController = controller();
 
 #define aozoraExperimental false
 
-static const char* aozoraVersion = "0.20.0";
-static const bool AUTONOMOUS_TEST_FLAG = false;
+static const char* aozoraVersion = "0.23.0";
+static const bool AUTONOMOUS_TEST_FLAG = true;
 
 
 
@@ -117,9 +117,9 @@ auto SpinnerCounterspinButton = primaryController.ButtonR2;
 
 // gyroscope object
 // introduced from aozora v0.16.1 for testing applications
-inertial primaryInertialObject(PORT1);
-inertial secondaryInertialObject(PORT2);
-inertial tertiaryInertialObject(PORT3);
+inertial primaryInertialObject(PORT15);
+inertial secondaryInertialObject(PORT14);
+inertial tertiaryInertialObject(PORT13);
 
 InertialWrapper primaryInertial = InertialWrapper(primaryInertialObject, 10.0, 10.0, InertialOrientation::FacingRight);
 InertialWrapper secondaryInertial = InertialWrapper(secondaryInertialObject, 10.0, 10.0, InertialOrientation::FacingRight);

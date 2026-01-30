@@ -6,7 +6,7 @@
 #pragma once
 #include "vex.h"
 
-static const int InertialDriftCalibrationCycles = 1000;
+static const int InertialDriftCalibrationCycles = 100;
 
 
 enum class InertialOrientation {
@@ -64,8 +64,12 @@ class InertialWrapper {
 
         void calibrate() {
             if (!linkedInertial.installed()) return;
-
-            while (linkedInertial.isCalibrating()) vex::wait(2, vex::msec);
+            
+            printf("\nInertial Sensor is connected. Calibrating...\n");
+            linkedInertial.calibrate();
+            
+            while (linkedInertial.isCalibrating()) vex::wait(5, vex::msec);
+            printf("Calibrated (1)!\n");
             
             // X-Axis
             double totalSummationXDrift = 0;
@@ -75,6 +79,7 @@ class InertialWrapper {
                 vex::wait(5, vex::msec);
             }
             driftXAxis = totalSummationXDrift / InertialDriftCalibrationCycles;
+            printf("Calibrated (2)!\n");
             
             // Y-Axis
             double totalSummationYDrift = 0;
@@ -84,6 +89,7 @@ class InertialWrapper {
                 vex::wait(5, vex::msec);
             }
             driftYAxis = totalSummationYDrift / InertialDriftCalibrationCycles;
+            printf("Calibrated (3)!\n");
             
             // Z-Axis
             double totalSummationZDrift = 0;
@@ -93,6 +99,7 @@ class InertialWrapper {
                 vex::wait(5, vex::msec);
             }
             driftZAxis = totalSummationZDrift / InertialDriftCalibrationCycles;
+            printf("Calibrated (4)!\n");
 
             // Calibrate heading
             linkedInertial.resetHeading();

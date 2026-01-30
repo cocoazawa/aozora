@@ -15,14 +15,14 @@ using namespace vex;
 
 void preAutonomous(void) {
     printf("\n\nPre-Running Autonomous (1)...\n");
-    primaryController.rumble("...");
+    
+    // initialize interface
+    vex::thread interfaceThread = thread( refreshCompetitionStatus );
     
     // initialize vex components
     initializeVEX();
     
-    // initialize interface
-    vex::thread interfaceThread = thread( refreshCompetitionStatus );
-
+    primaryController.rumble("...");
 }
 
 void autonomous(void) {
@@ -32,6 +32,11 @@ void autonomous(void) {
     setDrivetrainBraking(vex::brakeType::hold);
     
     vex::thread aggregationThread = thread( OverseerDataAggregator::runAggregation );
+
+    wait(5, sec);
+
+    MotorLeftGroup.spinFor(forward, 2, rev, false);
+    MotorRightGroup.spinFor(forward, 2, rev, false);
     
     // OverseerBasis &overseer = OverseerBasis::getInstance();
     
@@ -55,6 +60,8 @@ int main() {
     
     // Run the pre-autonomous function.
     preAutonomous();
+
+    if (!Ready) wait(10, sec);
 
 
     // Run autonomous in testing mode when the flag is set to true for that build.
