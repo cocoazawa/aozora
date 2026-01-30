@@ -22,6 +22,12 @@ class Timekeeper {
         double minPoint;
         double setPoint;
         TimekeepingType timekeepingType;
+
+        double convertDurationToMilliseconds(std::chrono::duration<double> someDuration) {
+            std::chrono::nanoseconds someDurationMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(someDuration);
+            double resultingCalculation = someDurationMilliseconds.count() / 1000000;
+            return resultingCalculation;
+        }
     
     public:
         /// @brief constructor with minimum time and set time (the time we want to reach) for differential calculation
@@ -75,17 +81,18 @@ class Timekeeper {
         /// @return final time to stop for (MinTime) OR the elapsed time since given start time (Stopwatch)
         double ending() {
             endPoint = std::chrono::system_clock::now();
-            std::chrono::duration<double> elapsedTime = endPoint - startPoint;
+            std::chrono::duration<double> elapsedTimeNative = endPoint - startPoint;
+            double elapsedTime = convertDurationToMilliseconds(elapsedTimeNative);
             // printf("[  GET   ] ChronosAssist: Elapsed Time %f\n", elapsedTime.count());
 
             switch (this->timekeepingType) {
                 case TimekeepingType::Stopwatch: {
-                    return elapsedTime.count();
+                    return elapsedTime;
                     break;
                 }
 
                 case TimekeepingType::MinTime: {
-                    double staleDuration = setPoint - elapsedTime.count();
+                    double staleDuration = setPoint - elapsedTime;
                     if (staleDuration < minPoint) {
                         // printf("[  GET   ] ChronosAssist: Returning minPoint of %f\n", minPoint);
                         // printf("[  READ  ] ChronosAssist: staleDuration was %f\n", staleDuration);
