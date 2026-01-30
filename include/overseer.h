@@ -1,7 +1,7 @@
 // overseer.h
-// Copyright (C) 2026 cocoazawa
 // 
-// Written by Peter G.
+// Copyright (C) 2026 cocoazawa
+// For `aozora`
 
 #pragma once
 #include "render.h"

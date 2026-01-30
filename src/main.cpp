@@ -1,7 +1,7 @@
 // main.cpp
-// Copyright (C) 2025 cocoazawa
 //
-// Written by Peter G.
+// Copyright (C) 2025 cocoazawa
+// For `aozora`
 
 #include "config.h"
 #include "vex.h"

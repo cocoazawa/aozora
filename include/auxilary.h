@@ -1,7 +1,7 @@
 // auxilary.cpp
-// Copyright (C) 2025 cocoazawa
 //
-// Written by Peter G.
+// Copyright (C) 2025 cocoazawa
+// For `aozora`
 
 #pragma once
 #include "v5.h"
