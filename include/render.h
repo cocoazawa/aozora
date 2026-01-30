@@ -116,17 +116,21 @@ void refreshCompetitionStatus() {
         screenRef.print("                    ");
 
         screenRef.setCursor(3, 1);
-        screenRef.print("        Inertial Sensor: ");
-        if (reporter.report.inertialConnected && reporter.report.inertialCalibrating) {
+        screenRef.print("       Inertial Sensors: ");
+        if ((reporter.report.primaryInertialConnected && reporter.report.primaryInertialCalibrating) || 
+            (reporter.report.secondaryInertialConnected && reporter.report.secondaryInertialCalibrating) || 
+            (reporter.report.tertiaryInertialConnected && reporter.report.tertiaryInertialCalibrating)) {
             screenRef.print("Calibrating...  ");
-        } else if (reporter.report.inertialConnected && !reporter.report.inertialCalibrating) {
+        } else if ((reporter.report.primaryInertialConnected && !reporter.report.primaryInertialCalibrating) && 
+            (reporter.report.secondaryInertialConnected && !reporter.report.secondaryInertialCalibrating) && 
+            (reporter.report.tertiaryInertialConnected && !reporter.report.tertiaryInertialCalibrating)) {
             screenRef.print("Performing  ");
         } else {
             screenRef.print("Disconnected  ");
         }
         screenRef.print("                    ");
 
-        screenRef.setCursor(4, 1);
+        screenRef.setCursor(3, 1);
         screenRef.print("       Battery Readings: ");
         screenRef.print("%.0f%%, %.0f°C, %.3f A, %.2f V    ", reporter.report.batteryPercentage, reporter.report.batteryTemperature, reporter.report.batteryCurrent, reporter.report.batteryVoltage);
         screenRef.print("                    ");

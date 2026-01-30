@@ -34,13 +34,27 @@ struct CoordinateOffsetDeltas {
 /// @brief This class, the OverseerDataAggregator has one job: it's to collect data from any possible sensors (except for the motor encoders) to generate an estimate of the current position through physics alone, and from sensor data.
 class OverseerDataAggregator {
     private:
+        double previousHorizontalOffset = 0;
+        double previousVerticalOffset = 0;
+        double previousHeading = 0;
+        
+        
         double aggregatedHorizontalOffset = 0;
         double aggregatedVerticalOffset = 0;
-
+        double aggregatedHeading = 0;
+        
+        double aggregatedHorizontalVelocity = 0;
+        double aggregatedVerticalVelocity = 0;
+        
+        
         double estimatedHorizontalOffset = 0;
         double estimatedVerticalOffset = 0;
+        double estimatedHeading = 0;
 
-        Timekeeper timekeeperAggregator = Timekeeper(TimekeepingType::MinTime, 0.1, 1.0);
+
+        Timekeeper timekeeperAggregator = Timekeeper(TimekeepingType::MinTime, 0.1, 10.0);
+        Timekeeper timekeeperAggregatorMeasurementTime = Timekeeper(TimekeepingType::Stopwatch);
+        bool measurementTimeStarted = false;
 
         OverseerDataAggregator() {
             printf("[OVERSEER] OverseerDataAggregator instance created.\n");
@@ -49,13 +63,138 @@ class OverseerDataAggregator {
         OverseerDataAggregator(OverseerDataAggregator const&);
         void operator=(OverseerDataAggregator const&);
 
+        // [INERTIAL] Obtain the acceleration for the sensor based on orientation and drift
+
+        CoordinateOffsetDeltas currentInertialAcceleration(vex::inertial &inertialObject, InertialWrapper &inertialWrapper) {
+            CoordinateOffsetDeltas deltas;
+
+            // derive raw values in SI units
+            double xAcceleration = inertialObject.acceleration(xaxis) * 9.80665;
+            double yAcceleration = inertialObject.acceleration(yaxis) * 9.80665;
+            
+            // factor in drift
+            xAcceleration -= inertialWrapper.drift(xaxis);
+            yAcceleration -= inertialWrapper.drift(yaxis);
+
+            // change to appropriate relative (horizontal, vertical) and factor in
+            switch (inertialWrapper.bearing()) {
+                case InertialOrientation::FacingForward:
+                    deltas.horizontalOffsetDelta = yAcceleration;
+                    deltas.verticalOffsetDelta = xAcceleration;
+                    break;
+                case InertialOrientation::FacingRight:
+                    deltas.horizontalOffsetDelta = xAcceleration;
+                    deltas.verticalOffsetDelta = -1 * yAcceleration;
+                    break;
+                case InertialOrientation::FacingBackwards:
+                    deltas.horizontalOffsetDelta = -1 * yAcceleration;
+                    deltas.verticalOffsetDelta = -1 * xAcceleration;
+                    break;
+                case InertialOrientation::FacingLeft:
+                    deltas.horizontalOffsetDelta = -1 * xAcceleration;
+                    deltas.verticalOffsetDelta = yAcceleration;
+                    break;
+            }
+
+            return deltas;
+        }
+        
+
+
+        // [DRIVETRAIN] angular displacement and eventual displacement derivation
+
+        /// @brief gets the average of three doubles
+        /// @param doubleA first double
+        /// @param doubleB second double
+        /// @param doubleC third double
+        /// @return averaged double
+        double deriveCubicAverage(double doubleA, double doubleB, double doubleC) {
+            double averageDoubles = doubleA + doubleB + doubleC;
+            averageDoubles = averageDoubles / 3;
+            return averageDoubles;
+        }
+
+        /// @brief derives total displacement in millimeters for the active side
+        /// @return displacement in millimeters
+        double deriveDisplacement(MotorGroupSide forActiveSide) {
+            double totalRotationalDisplacement = 0.0;
+
+            // NOTE: we use revolutions for calculations here, not degrees.
+            switch (forActiveSide) {
+                case MotorGroupSide::Left: {
+                    totalRotationalDisplacement = deriveCubicAverage(MotorLeftFront.position(vex::rotationUnits::rev), MotorLeftMid.position(vex::rotationUnits::rev), MotorLeftBack.position(vex::rotationUnits::rev));
+                    break;
+                }
+                case MotorGroupSide::Right: {
+                    totalRotationalDisplacement = deriveCubicAverage(MotorRightFront.position(vex::rotationUnits::rev), MotorRightMid.position(vex::rotationUnits::rev), MotorRightBack.position(vex::rotationUnits::rev));
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+
+            // average multiplied by the gear ratio to get actual travel per cent and
+            return (totalRotationalDisplacement * GearRatio * TotalTravelDistance);
+        }
+
+
+        // [AGGREGATE]
+
         /// @brief Aggregates up-to-date information and updates the sensor-based estimate
         void reAggregate() {
             timekeeperAggregator.start();
 
-            double ForwardAcceleration = primaryInertialObject.acceleration(xaxis) * 9.80665;
-            double SideAcceleration = primaryInertialObject.acceleration(yaxis) * 9.80665;
+            // NOTE: INERTIAL
+            double elapsedTime = timekeeperAggregatorMeasurementTime.ending();
+            if (!measurementTimeStarted) elapsedTime = 0;
+            CoordinateOffsetDeltas primaryInertialAccelerationDeltas = currentInertialAcceleration(primaryInertialObject, primaryInertial);
+            CoordinateOffsetDeltas secondaryInertialAccelerationDeltas = currentInertialAcceleration(secondaryInertialObject, secondaryInertial);
+            CoordinateOffsetDeltas tertiaryInertialAccelerationDeltas = currentInertialAcceleration(tertiaryInertialObject, tertiaryInertial);
+            timekeeperAggregatorMeasurementTime.start();
             
+            
+            CoordinateOffsetDeltas totalInertialAccelerationDelta;
+            
+            totalInertialAccelerationDelta.horizontalOffsetDelta = (primaryInertialAccelerationDeltas.horizontalOffsetDelta + secondaryInertialAccelerationDeltas.horizontalOffsetDelta + tertiaryInertialAccelerationDeltas.horizontalOffsetDelta) / 3;
+            totalInertialAccelerationDelta.verticalOffsetDelta = (primaryInertialAccelerationDeltas.verticalOffsetDelta + secondaryInertialAccelerationDeltas.verticalOffsetDelta + tertiaryInertialAccelerationDeltas.verticalOffsetDelta) / 3;
+            
+            CoordinateOffsetDeltas inertialBasedOffset;
+            double inertialBasedHeading;
+
+            // i use... verlet!!!
+            inertialBasedOffset.horizontalOffsetDelta = (2 * aggregatedHorizontalOffset) - previousHorizontalOffset + (totalInertialAccelerationDelta.horizontalOffsetDelta * 0.5 * elapsedTime);
+            inertialBasedOffset.verticalOffsetDelta = (2 * aggregatedVerticalOffset) - previousVerticalOffset + (totalInertialAccelerationDelta.horizontalOffsetDelta * 0.5 * elapsedTime);
+            
+            // i use... whatever this is
+            inertialBasedHeading = (primaryInertialObject.heading() + secondaryInertialObject.heading() + tertiaryInertialObject.heading()) / 3;
+
+            
+
+
+            // NOTE: Drivetrain
+            double leftDisplacement = deriveDisplacement(MotorGroupSide::Left);
+            double rightDisplacement = deriveDisplacement(MotorGroupSide::Left);
+
+            CoordinateOffsetDeltas drivetrainBasedOffset;
+            double headingOffset = 0;
+
+            inertialBasedOffset.verticalOffsetDelta = leftDisplacement;
+
+            if (leftDisplacement != rightDisplacement) {
+                double radiusOfArc = (leftDisplacement * TotalMachineDiameter) / (leftDisplacement - rightDisplacement);
+                double arcAngle = (180 * leftDisplacement) / (M_PI * radiusOfArc);
+    
+                headingOffset = arcAngle;
+    
+                double hypotenuseOfArc = radiusOfArc - (TotalMachineDiameter / 2);
+                drivetrainBasedOffset.verticalOffsetDelta = sin(arcAngle * M_PI / 180) * hypotenuseOfArc;
+                
+                double partialExcessHorizontal = (drivetrainBasedOffset.verticalOffsetDelta * sin((90 - arcAngle) * M_PI / 180)) / sin(arcAngle * M_PI / 180);
+                drivetrainBasedOffset.horizontalOffsetDelta = hypotenuseOfArc - partialExcessHorizontal;
+            }
+
+
             auto waitTime = timekeeperAggregator.ending();
             wait(waitTime, msec);
         }
@@ -63,6 +202,14 @@ class OverseerDataAggregator {
         void reEstimate() {
 
         }
+
+
+
+
+
+
+
+
 
     public:
         /// @brief gets the singleton instance of the OverseerDataAggregator class
@@ -91,8 +238,6 @@ class OverseerDataAggregator {
 /// @brief Overseer utility data provisioning and processing class
 class OverseerDataConnector {
     private:
-        MotorGroupSide ActiveSide;
-
         double Setpoint = 0;
 
         double rawCurrentError = 0;
@@ -114,52 +259,16 @@ class OverseerDataConnector {
         double positionRightMaximum = 0;
 
 
-        // angular displacement and eventual displacement derivation
-
-        /// @brief gets the average of three doubles
-        /// @param doubleA first double
-        /// @param doubleB second double
-        /// @param doubleC third double
-        /// @return averaged double
-        double deriveCubicAverage(double doubleA, double doubleB, double doubleC) {
-            double averageDoubles = doubleA + doubleB + doubleC;
-            averageDoubles = averageDoubles / 3;
-            return averageDoubles;
-        }
-
-        /// @brief derives total displacement in millimeters for the active side
-        /// @return displacement in millimeters
         double deriveDisplacement() {
-            double totalRotationalDisplacement = 0.0;
-
-            // NOTE: we use revolutions for calculations, not degrees.
-            switch (ActiveSide) {
-                case MotorGroupSide::Left: {
-                    totalRotationalDisplacement = deriveCubicAverage(MotorLeftFront.position(vex::rotationUnits::rev), MotorLeftMid.position(vex::rotationUnits::rev), MotorLeftBack.position(vex::rotationUnits::rev));
-                    break;
-                }
-                case MotorGroupSide::Right: {
-                    totalRotationalDisplacement = deriveCubicAverage(MotorRightFront.position(vex::rotationUnits::rev), MotorRightMid.position(vex::rotationUnits::rev), MotorRightBack.position(vex::rotationUnits::rev));
-                    break;
-                }
-                default: {
-                    break;
-                }
-            }
-
-            // average multiplied by the gear ratio to get actual travel per cent and
-            return (totalRotationalDisplacement * GearRatio * TotalTravelDistance);
+            return 0;
         }
-
 
 
 
     public:
         /// @brief constructor for Datacenter with active side
         /// @param side active side
-        OverseerDataConnector(MotorGroupSide side) {
-            this->ActiveSide = side;
-        }
+        OverseerDataConnector() {}
 
         /// @brief gets the current setpoint
         /// @return setpoint (mm)
@@ -170,12 +279,6 @@ class OverseerDataConnector {
         /// @param newSetpoint new setpoint (mm)
         void setSetpoint(double newSetpoint) {
             Setpoint = newSetpoint;
-        }
-
-        /// @brief gets the active side
-        /// @return active side (MotorGroupSide)
-        MotorGroupSide getActiveSide() {
-            return this->ActiveSide;
         }
 
         /// @brief gets the relative error based on setpoint and actual covered
@@ -203,18 +306,12 @@ class OverseerDataConnector {
             previousErrorValue = 0.0;
             previousElapsedTime = 0.0;
 
-            switch (ActiveSide) {
-                case Left:
-                    MotorLeftFront.resetPosition();
-                    MotorLeftMid.resetPosition();
-                    MotorLeftBack.resetPosition();
-                    break;
-                case Right:
-                    MotorRightFront.resetPosition();
-                    MotorRightMid.resetPosition();
-                    MotorRightBack.resetPosition();
-                    break;
-            }
+            MotorLeftFront.resetPosition();
+            MotorLeftMid.resetPosition();
+            MotorLeftBack.resetPosition();
+            MotorRightFront.resetPosition();
+            MotorRightMid.resetPosition();
+            MotorRightBack.resetPosition();
         }
 
         /// @brief force stops all motors on the drivetrain (regardless of active side, stops all motors)
@@ -309,8 +406,7 @@ class OverseerBasis {
 
         // central datacenter
         // TODO: Provision a datacenter with a pointer to the central timekeeper. You can make the timekeeper public.
-        OverseerDataConnector datacenterLeft = OverseerDataConnector(Left);
-        OverseerDataConnector datacenterRight = OverseerDataConnector(Right);
+        OverseerDataConnector dataConnector = OverseerDataConnector();
 
 
         /// @brief evaluates if the stop conditions have been reached for this datacenter
@@ -331,31 +427,32 @@ class OverseerBasis {
         /// @brief runs the control loop until stop is issued
         void startControl() {
             // reset the drivetrain's position values
-            datacenterLeft.resetDrivetrainDatascope();
-            datacenterRight.resetDrivetrainDatascope();
+            dataConnector.resetDrivetrainDatascope();
 
 
             // remain in control until a stop has been issued
             while (stopIssue != true) {
-                // issue a stop when the error is below the threshold
-                if (evaluateStopCondition(&datacenterLeft) && evaluateStopCondition(&datacenterRight)) {
-                    primaryBrain.Screen.setFont(mono15);
-                    primaryBrain.Screen.setOrigin(0, 60);
-                    primaryBrain.Screen.setCursor(7 + 5, 1);
-                    primaryBrain.Screen.print("               STOP COMMAND ISSUED: ");
-                    primaryBrain.Screen.print("TRUE");
-                    primaryBrain.Screen.print("                    ");
-                    issueStop();
-                    return;
-                }
 
-                double leftCommand = 0.0;
-                leftCommand = datacenterLeft.deriveCommand();
-                MotorLeftGroup.spin(forward, (LeftSkewMultiplier * leftCommand), vex::velocityUnits::rpm);
+                stopIssue = true;
+                // // issue a stop when the error is below the threshold
+                // if (evaluateStopCondition(&datacenterLeft) && evaluateStopCondition(&datacenterRight)) {
+                //     primaryBrain.Screen.setFont(mono15);
+                //     primaryBrain.Screen.setOrigin(0, 60);
+                //     primaryBrain.Screen.setCursor(7 + 5, 1);
+                //     primaryBrain.Screen.print("               STOP COMMAND ISSUED: ");
+                //     primaryBrain.Screen.print("TRUE");
+                //     primaryBrain.Screen.print("                    ");
+                //     issueStop();
+                //     return;
+                // }
+
+                // double leftCommand = 0.0;
+                // leftCommand = datacenterLeft.deriveCommand();
+                // MotorLeftGroup.spin(forward, (LeftSkewMultiplier * leftCommand), vex::velocityUnits::rpm);
                 
-                double rightCommand = 0.0;
-                rightCommand = datacenterRight.deriveCommand();
-                MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
+                // double rightCommand = 0.0;
+                // rightCommand = datacenterRight.deriveCommand();
+                // MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
 
                 // // issue a stop when the error is below the threshold
                 // if (evaluateStopCondition(&datacenterLeft) && evaluateStopCondition(&datacenterRight)) {
@@ -380,10 +477,10 @@ class OverseerBasis {
                 // }
 
 
-                printf("%f;", leftCommand);
-                printf("%f;", rightCommand);
-                printf("%f;", datacenterLeft.getDisplacement());
-                printf("%f/", datacenterRight.getDisplacement());
+                // printf("%f;", leftCommand);
+                // printf("%f;", rightCommand);
+                // printf("%f;", datacenterLeft.getDisplacement());
+                // printf("%f/", datacenterRight.getDisplacement());
             }
         }
 
@@ -402,10 +499,21 @@ class OverseerBasis {
             return instance;
         }
 
+        /// @brief force stops all motors on the drivetrain (regardless of active side, stops all motors)
+        static void stopDrivetrain() {
+            MotorLeftFront.stop();
+            MotorLeftMid.stop();
+            MotorLeftBack.stop();
+
+            MotorRightFront.stop();
+            MotorRightMid.stop();
+            MotorRightBack.stop();
+        }
+
         /// @brief issue a stop to the overseer control function as well as stopping the drivetrain of any commands.
         void issueStop() {
             stopIssue = true;
-            OverseerDataConnector::stopDrivetrain();
+            OverseerBasis::stopDrivetrain();
         }
         
         /// @brief Runs the operation until the setpoint has been reached or time outs
@@ -416,23 +524,15 @@ class OverseerBasis {
 
             switch (commandType) {
                 case Propel:
-                    datacenterLeft.setSetpoint(setpoint);
-                    datacenterRight.setSetpoint(setpoint);
+                    dataConnector.setSetpoint(setpoint);
                     break;
-                default:
+                    default:
                     double dialedSetpoint = (abs(setpoint) / 360.0) * M_PI * 2 * (TotalMachineDiameter / 2);
-                    if (setpoint > 0) {
-                        datacenterLeft.setSetpoint(dialedSetpoint);
-                        datacenterRight.setSetpoint(-1 * dialedSetpoint);
-                    } else {
-                        datacenterLeft.setSetpoint(-1 * dialedSetpoint);
-                        datacenterRight.setSetpoint(dialedSetpoint);
-                    }
+                    dataConnector.setSetpoint(setpoint);
                     break;
             }
 
-            datacenterLeft.resetTimekeeper();
-            datacenterRight.resetTimekeeper();
+            dataConnector.resetTimekeeper();
 
             startControl();
 

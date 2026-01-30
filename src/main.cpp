@@ -28,6 +28,8 @@ void preAutonomous(void) {
 void autonomous(void) {
     // start running aggregation
     printf("\n\nRunning Autonomous Phase\n");
+
+    setDrivetrainBraking(vex::brakeType::hold);
     
     vex::thread aggregationThread = thread( OverseerDataAggregator::runAggregation );
     

@@ -42,7 +42,7 @@ static bool Ready = false;
 
 // maximum direct rpm output from the motor
 static const double MaximumDirectRPM = 600;
-static const double TotalMachineDiameter = 315.0;
+static const double TotalMachineDiameter = 292.5;
 static const double TotalTravelDistance = 260;
 // ratio remapping from the direct output to the actual output (yes, this CAN be simplified; it SHOULD NOT BE SIMPLIFIED)
 static const double GearRatio = 36.0 / 60.0;
@@ -121,7 +121,7 @@ inertial primaryInertialObject(PORT1);
 inertial secondaryInertialObject(PORT2);
 inertial tertiaryInertialObject(PORT3);
 
-InertialWrapper primaryInertial = InertialWrapper(primaryInertialObject, 10.0, 10.0, 90.0);
-InertialWrapper secondaryInertial = InertialWrapper(secondaryInertialObject, 10.0, 10.0, 90.0);
-InertialWrapper tertiaryInertial = InertialWrapper(tertiaryInertialObject, 10.0, 10.0, 270.0);
+InertialWrapper primaryInertial = InertialWrapper(primaryInertialObject, 10.0, 10.0, InertialOrientation::FacingRight);
+InertialWrapper secondaryInertial = InertialWrapper(secondaryInertialObject, 10.0, 10.0, InertialOrientation::FacingRight);
+InertialWrapper tertiaryInertial = InertialWrapper(tertiaryInertialObject, 10.0, 10.0, InertialOrientation::FacingLeft);
 
