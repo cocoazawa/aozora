@@ -52,9 +52,9 @@ void setDrivetrainBraking(vex::brakeType newBrakeType) {
 
 
 void initializeVEX(void) {
-    primaryInertial.calibrate();
-    secondaryInertial.calibrate();
-    tertiaryInertial.calibrate();
+    // primaryInertial.calibrate();
+    // secondaryInertial.calibrate();
+    // tertiaryInertial.calibrate();
 
     setDrivetrainBraking(vex::brakeType::coast);
     MotorSpinner.setBrake(vex::brakeType::coast);

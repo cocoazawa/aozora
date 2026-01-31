@@ -33,12 +33,8 @@ struct CoordinateOffsetDeltas {
 /// @brief This class, the OverseerDataAggregator has one job: it's to collect data from any possible sensors (except for the motor encoders) to generate an estimate of the current position through physics alone, and from sensor data.
 class OverseerDataAggregator {
     private:
-        double previousVerticalOffset = 0;
+        double previousDisplacement = 0;
         double previousHeading = 0;
-        
-
-        double estimatedVerticalOffset = 0;
-        double estimatedHeading = 0;
 
 
         Timekeeper timekeeperAggregator = Timekeeper(TimekeepingType::MinTime, 0.1, 10.0);
@@ -134,7 +130,7 @@ class OverseerDataAggregator {
         void reAggregate() {
             timekeeperAggregator.start();
 
-            previousVerticalOffset = aggregatedVerticalOffset;
+            previousDisplacement = aggregatedDisplacement;
             previousHeading = aggregatedHeading;
 
             // NOTE: Inertial
@@ -144,10 +140,9 @@ class OverseerDataAggregator {
 
 
             // NOTE: Encoders
-            // 68.5mm off
             CoordinateOffsetDeltas encoderBasedOffset;
-            encoderBasedOffset.horizontalOffsetDelta = horizontalRotational.position(vex::rotationUnits::deg) * 159.5882;
-            encoderBasedOffset.verticalOffsetDelta = horizontalRotational.position(vex::rotationUnits::deg) * 159.5882;
+            encoderBasedOffset.horizontalOffsetDelta = HorizontalRotational.position(vex::rotationUnits::rev) * TotalTrackingTravelDistance;
+            encoderBasedOffset.verticalOffsetDelta = HorizontalRotational.position(vex::rotationUnits::rev) * TotalTrackingTravelDistance;
 
             double encoderBasedHeading = encoderBasedOffset.horizontalOffsetDelta / (2 * M_PI * HorizontalEncoderCorDistance);
 
@@ -161,7 +156,7 @@ class OverseerDataAggregator {
 
             drivetrainBasedOffset.verticalOffsetDelta = leftDisplacement;
 
-            if (fabs(leftDisplacement - rightDisplacement) > 0.1) {
+            if (fabs(leftDisplacement - rightDisplacement) > 1) {
                 double radiusOfArc = (leftDisplacement * TotalMachineDiameter) / (leftDisplacement - rightDisplacement);
                 double arcAngle = (180 * leftDisplacement) / (M_PI * radiusOfArc);
     
@@ -174,13 +169,13 @@ class OverseerDataAggregator {
                 drivetrainBasedOffset.horizontalOffsetDelta = hypotenuseOfArc - partialExcessHorizontal;
             }
 
-            double aggregatedDrivetrainBasedVerticalOffset = aggregatedVerticalOffset;
+            double aggregatedDrivetrainDisplacement = aggregatedDisplacement;
             double aggregatedDrivetrainBasedHeading = aggregatedHeading;
-
-            aggregatedDrivetrainBasedVerticalOffset += drivetrainBasedOffset.verticalOffsetDelta;
+            
+            aggregatedDrivetrainDisplacement += drivetrainBasedOffset.verticalOffsetDelta;
             aggregatedDrivetrainBasedHeading += drivetrainBasedHeadingOffset;
-
-            aggregatedVerticalOffset = encoderBasedOffset.verticalOffsetDelta * relianceDisplacementEncoders + aggregatedDrivetrainBasedVerticalOffset * relianceDisplacementDrivetrain;
+            
+            aggregatedDisplacement = encoderBasedOffset.verticalOffsetDelta * relianceDisplacementEncoders + aggregatedDrivetrainDisplacement * relianceDisplacementDrivetrain;
             aggregatedHeading = inertialBasedHeading * relianceHeadingInertial + encoderBasedHeading * relianceHeadingEncoders + aggregatedDrivetrainBasedHeading * relianceHeadingDrivetrain;
             
             auto waitTime = timekeeperAggregator.ending();
@@ -190,7 +185,7 @@ class OverseerDataAggregator {
 
 
     public:
-        double aggregatedVerticalOffset = 0;
+        double aggregatedDisplacement = 0;
         double aggregatedHeading = 0;
 
 
@@ -246,7 +241,7 @@ class OverseerDataConnector {
         double deriveDisplacement() {
             switch (Commanding) {
                 case Propel:
-                    return OverseerDataAggregator::getInstance().aggregatedVerticalOffset;
+                    return OverseerDataAggregator::getInstance().aggregatedDisplacement;
                     break;
                 case Pivot:
                     return OverseerDataAggregator::getInstance().aggregatedHeading;
@@ -303,6 +298,9 @@ class OverseerDataConnector {
             previousErrorValue = 0.0;
             previousElapsedTime = 0.0;
 
+            HorizontalRotational.resetPosition();
+            VerticalRotational.resetPosition();
+
             MotorLeftFront.resetPosition();
             MotorLeftMid.resetPosition();
             MotorLeftBack.resetPosition();
@@ -326,16 +324,22 @@ class OverseerDataConnector {
         /// @return returns the command to be issued to the motors
         double deriveCommand() {
             Cycles++;
+            
             double errorValue = getError();
-            if (previousErrorValue == 0) previousErrorValue = errorValue;
-
-            rawCurrentError = errorValue;
-            rawSummedError += errorValue;
+            // check if the command type is pivoting to change the error from degrees to mm
+            if (Commanding) errorValue *= (M_PI * TotalMachineDiameter);
 
             auto elapsedTime = timekeeperData.ending();
-            timekeeperData.destoreStart();
-            timekeeperData.start();
+            timekeeperData.storeStart(std::chrono::system_clock::now());
 
+
+            // proportional
+            rawCurrentError = errorValue;
+            // integral
+            rawSummedError += errorValue;
+
+            // derivative
+            // trying not to divide by zero
             if (elapsedTime == 0.0 && previousElapsedTime != 0.0) {
                 rawRateBasedError = (previousErrorValue - errorValue) / previousElapsedTime;
             } else if (previousElapsedTime == 0) {
@@ -392,6 +396,8 @@ class OverseerDataConnector {
             primaryBrain.Screen.print("FALSE");
             primaryBrain.Screen.print("                    ");
 
+            primaryBrain.Screen.setOrigin(0, 0);
+
             return command;
         }
 };
@@ -415,7 +421,7 @@ class OverseerBasis {
             if ((*datacenterGeneric).getError() < OverseerToleranceUpper && (*datacenterGeneric).getError() > OverseerToleranceLower) stopping = true;
             
             // emergency stop is being issued
-            if (primaryController.ButtonDown.pressing() && primaryController.ButtonUp.pressing()) stopping = true;
+            if (primaryController.ButtonDown.pressing()) stopping = true;
             
             return stopping;
         }
@@ -441,13 +447,20 @@ class OverseerBasis {
                     return;
                 }
 
-                double command = 0.0;
-                command = dataConnector.deriveCommand();
-                MotorLeftGroup.spin(forward, (LeftSkewMultiplier * command), vex::velocityUnits::rpm);
-                MotorRightGroup.spin(forward, command, vex::velocityUnits::rpm);
-                
-                // double rightCommand = 0.0;
-                // rightCommand = datacenterRight.deriveCommand();
+
+                double leftCommand = 0.0;
+                double rightCommand = 0.0;
+
+                leftCommand = dataConnector.deriveCommand();
+                rightCommand = dataConnector.deriveCommand();
+
+                if (dataConnector.getCommandType() == Pivot) {
+                    if (dataConnector.getSetpoint() < 0) leftCommand *= -1;
+                    if (dataConnector.getSetpoint() > 0) rightCommand *= -1;
+                }
+
+                MotorLeftGroup.spin(forward, (LeftSkewMultiplier * leftCommand), vex::velocityUnits::rpm);
+                MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
 
                 // // issue a stop when the error is below the threshold
                 // if (evaluateStopCondition(&datacenterLeft) && evaluateStopCondition(&datacenterRight)) {
@@ -494,6 +507,12 @@ class OverseerBasis {
             return instance;
         }
 
+        /// @brief issue a stop to the overseer control function as well as stopping the drivetrain of any commands.
+        void issueStop() {
+            stopIssue = true;
+            OverseerBasis::stopDrivetrain();
+        }
+
         /// @brief force stops all motors on the drivetrain (regardless of active side, stops all motors)
         static void stopDrivetrain() {
             MotorLeftFront.stop();
@@ -505,11 +524,6 @@ class OverseerBasis {
             MotorRightBack.stop();
         }
 
-        /// @brief issue a stop to the overseer control function as well as stopping the drivetrain of any commands.
-        void issueStop() {
-            stopIssue = true;
-            OverseerBasis::stopDrivetrain();
-        }
         
         /// @brief Runs the operation until the setpoint has been reached or time outs
         /// @param commandType The type of command to operate
@@ -517,8 +531,9 @@ class OverseerBasis {
         void operation(CommandType commandType, double setpoint) {
             stopIssue = false;
             
-            dataConnector.setSetpoint(setpoint, commandType);
             dataConnector.resetTimekeeper();
+            dataConnector.resetDrivetrainDatascope();
+            dataConnector.setSetpoint(setpoint, commandType);
 
             startControl();
 

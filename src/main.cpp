@@ -17,7 +17,7 @@ void preAutonomous(void) {
     printf("\n\nPre-Running Autonomous (1)...\n");
     
     // initialize interface
-    vex::thread interfaceThread = thread( refreshCompetitionStatus );
+    // vex::thread interfaceThread = thread( refreshCompetitionStatus );
     
     // initialize vex components
     initializeVEX();
@@ -52,7 +52,6 @@ void autonomous(void) {
 int main() {
     printf("\n\naozora -- version %s -- by cocoazawa for 76371M\n", aozoraVersion);
     printf("aozora -- profile %s\n\n\n", profileVersion);
-    
     // Run the pre-autonomous function.
     preAutonomous();
 

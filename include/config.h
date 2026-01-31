@@ -29,7 +29,7 @@ static const bool AUTONOMOUS_TEST_FLAG = true;
 
 // Printing Values
 
-#define aozoraTeamColor red
+#define aozoraTeamColor blue
 // #define aozoraTeamColor blue
 
 static const int adjustHorizontal = -10;
@@ -41,9 +41,10 @@ static bool Ready = false;
 // Overseer Calculation Values
 
 // maximum direct rpm output from the motor
-static const double MaximumDirectRPM = 600;
+static const double MaximumDirectRPM = 100;
 static const double TotalMachineDiameter = 292.5;
 static const double TotalTravelDistance = 260;
+static const double TotalTrackingTravelDistance = 159.5882;
 // ratio remapping from the direct output to the actual output (yes, this CAN be simplified; it SHOULD NOT BE SIMPLIFIED)
 static const double GearRatio = 36.0 / 60.0;
 
@@ -59,7 +60,7 @@ static const double relianceDisplacementDrivetrain = 0.3;
 
 
 // Overseer
-double LeftSkewMultiplier = 0.86;
+double LeftSkewMultiplier = 1.00;
 
 /// @details Speed Last, Accuracy First (SLAF-00) Profile
 // static const char* profileVersion = "SLAF-00";
@@ -123,8 +124,8 @@ auto SpinnerCounterspinButton = primaryController.ButtonR2;
 
 
 // rotation sensor
-rotation horizontalRotational = rotation(PORT20, false);
-rotation verticalRotational = rotation(PORT18, false);
+rotation HorizontalRotational = rotation(PORT20, false);
+rotation VerticalRotational = rotation(PORT18, false);
 
 static const double HorizontalEncoderCorDistance = 68.5; // mm
 
