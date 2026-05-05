@@ -41,7 +41,7 @@ static bool Ready = false;
 // Overseer Calculation Values
 
 // maximum direct rpm output from the motor
-static const double MaximumDirectRPM = 100;
+static const double MaximumDirectRPM = 600;
 static const double TotalMachineDiameter = 292.5;
 static const double TotalTravelDistance = 260;
 static const double TotalTrackingTravelDistance = 159.5882;
@@ -54,13 +54,14 @@ static const double relianceHeadingInertial = 0.8;
 static const double relianceHeadingEncoders = 0.15;
 static const double relianceHeadingDrivetrain = 0.05;
 
-static const double relianceDisplacementEncoders = 0.7;
-static const double relianceDisplacementDrivetrain = 0.3;
+static const double relianceDisplacementEncoders = 0.0;
+static const double relianceDisplacementDrivetrain = 1.0;
 
 
 
 // Overseer
-double LeftSkewMultiplier = 1.00;
+double LeftSkewMultiplier = 0.95;
+double MaximumIntegralError = 2 * pow(10, 100);
 
 /// @details Speed Last, Accuracy First (SLAF-00) Profile
 // static const char* profileVersion = "SLAF-00";
@@ -69,18 +70,18 @@ double LeftSkewMultiplier = 1.00;
 // double DerivativeMultiplier = 0.007;
 // double OverallMultiplier = 0.1;
 
-/// @details Speed Priority, Accuracy Non-controlled (SPAN-14) Profile
-static const char* profileVersion = "SPAN-21";
+/// @details Speed Priority, Accuracy Non-controlled (SPAN-22) Profile
+static const char* profileVersion = "SPAN-22";
 double ProportionalMultiplier = 0.78;
 double IntegralMultiplier = 0.00015;
-double DerivativeMultiplier = 10.0;
+double DerivativeMultiplier = 1000.0;
 double OverallMultiplier = 1.0;
 
 
 
 // tolerances for Overseer
-double OverseerToleranceUpper = 2.0;
-double OverseerToleranceLower = -2.0;
+double OverseerToleranceUpper = 0.2;
+double OverseerToleranceLower = -0.2;
 
 // the LOWER BOUNDS for the driverControl's Controller
 double ControllerTolerance = 0.02;

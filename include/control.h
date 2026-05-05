@@ -61,7 +61,7 @@ void userControl(void) {
             continue;
         }
         
-        long leftVelocity = MaximumDirectRPM * (velocityMultiplier + sidewaysMultiplier);
+        long leftVelocity = MaximumDirectRPM * (velocityMultiplier + sidewaysMultiplier) * LeftSkewMultiplier;
         long rightVelocity = MaximumDirectRPM * (velocityMultiplier - sidewaysMultiplier);
 
         MotorLeftGroup.spin(forward, leftVelocity, rpm);

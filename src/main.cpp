@@ -29,7 +29,7 @@ void autonomous(void) {
     // start running aggregation
     printf("\n\nRunning Autonomous Phase\n");
 
-    setDrivetrainBraking(vex::brakeType::hold);
+    // setDrivetrainBraking(vex::brakeType::hold);
     
     vex::thread aggregationThread = thread( OverseerDataAggregator::runAggregation );
     
@@ -37,10 +37,10 @@ void autonomous(void) {
     
     // vex::thread interfaceThread = thread( spinIntake );
     overseer.operation(CommandType::Propel, 600.0);
-    // overseer.operation(CommandType::Pivot, 148.2);
-    // overseer.operation(CommandType::Propel, 1235.4756169184);
-    // overseer.operation(CommandType::Pivot, -148.2);
     // overseer.operation(CommandType::Propel, 750.0);
+    // overseer.operation(CommandType::Pivot, 90.0);
+    // overseer.operation(CommandType::Propel, 450.0);
+    // overseer.operation(CommandType::Propel, -800.0);
     // aggregationThread.interrupt();
 }
 

@@ -5,6 +5,7 @@
 
 #pragma once
 #include "math.h"
+#include <cmath>
 #include "config.h"
 #include "timekeeper.h"
 
@@ -142,7 +143,7 @@ class OverseerDataAggregator {
             // NOTE: Encoders
             CoordinateOffsetDeltas encoderBasedOffset;
             encoderBasedOffset.horizontalOffsetDelta = HorizontalRotational.position(vex::rotationUnits::rev) * TotalTrackingTravelDistance;
-            encoderBasedOffset.verticalOffsetDelta = HorizontalRotational.position(vex::rotationUnits::rev) * TotalTrackingTravelDistance;
+            encoderBasedOffset.verticalOffsetDelta = VerticalRotational.position(vex::rotationUnits::rev) * TotalTrackingTravelDistance;
 
             double encoderBasedHeading = encoderBasedOffset.horizontalOffsetDelta / (2 * M_PI * HorizontalEncoderCorDistance);
 
@@ -174,7 +175,11 @@ class OverseerDataAggregator {
             
             aggregatedDrivetrainDisplacement += drivetrainBasedOffset.verticalOffsetDelta;
             aggregatedDrivetrainBasedHeading += drivetrainBasedHeadingOffset;
+            printf("%.2f\n and", aggregatedDrivetrainDisplacement);
+            printf("%.2f\n", drivetrainBasedOffset.verticalOffsetDelta);
             
+
+            // NOTE: Reliance Based Filter
             aggregatedDisplacement = encoderBasedOffset.verticalOffsetDelta * relianceDisplacementEncoders + aggregatedDrivetrainDisplacement * relianceDisplacementDrivetrain;
             aggregatedHeading = inertialBasedHeading * relianceHeadingInertial + encoderBasedHeading * relianceHeadingEncoders + aggregatedDrivetrainBasedHeading * relianceHeadingDrivetrain;
             
@@ -327,9 +332,12 @@ class OverseerDataConnector {
             
             double errorValue = getError();
             // check if the command type is pivoting to change the error from degrees to mm
-            if (Commanding) errorValue *= (M_PI * TotalMachineDiameter);
+            if (Commanding == Pivot) errorValue = (M_PI * TotalMachineDiameter) * (errorValue / 360);
+            
+            // printf("%.2f\n", errorValue);
+            // printf("%.2f\n", getDisplacement());
 
-            auto elapsedTime = timekeeperData.ending();
+            auto elapsedTime = timekeeperData.ending() * 0.001;
             timekeeperData.storeStart(std::chrono::system_clock::now());
 
 
@@ -337,34 +345,32 @@ class OverseerDataConnector {
             rawCurrentError = errorValue;
             // integral
             rawSummedError += errorValue;
-
+            // clamping integral
+            if (rawSummedError > MaximumIntegralError) rawSummedError = MaximumIntegralError;
+            if (rawSummedError < -MaximumIntegralError) rawSummedError = -MaximumIntegralError;
             // derivative
-            // trying not to divide by zero
-            if (elapsedTime == 0.0 && previousElapsedTime != 0.0) {
-                rawRateBasedError = (previousErrorValue - errorValue) / previousElapsedTime;
-            } else if (previousElapsedTime == 0) {
-                rawRateBasedError = 0;
-            } else {
-                rawRateBasedError = (previousErrorValue - errorValue) / elapsedTime;
-                previousElapsedTime = elapsedTime;
-            }
-
+            rawRateBasedError = (errorValue - previousErrorValue) / elapsedTime;
+            if (std::isnan(rawRateBasedError)) rawRateBasedError = 0.0;
+            previousElapsedTime = elapsedTime;
+            
+            
+            // actual derivation of command with gains
             CurrentError = ProportionalMultiplier * rawCurrentError;
             SummedError = IntegralMultiplier * rawSummedError;
             RateBasedError = DerivativeMultiplier * rawRateBasedError;
-
-            // actual derivation of command
+            
             double command = OverallMultiplier * (CurrentError + SummedError + RateBasedError);
-
+            
             // clamping command
             if (command > MaximumDirectRPM) command = MaximumDirectRPM;
             if (command < -MaximumDirectRPM) command = -MaximumDirectRPM;
-
+            
+            // set current error to previous
             previousErrorValue = errorValue;
-
+            
             primaryBrain.Screen.setFont(mono15);
             primaryBrain.Screen.setOrigin(0, 60);
-
+            
             primaryBrain.Screen.setCursor(1 + 5, 1);
             primaryBrain.Screen.print("                            Cycles: ");
             primaryBrain.Screen.print(Cycles);
@@ -383,12 +389,12 @@ class OverseerDataConnector {
             primaryBrain.Screen.print("                    ");
             primaryBrain.Screen.setCursor(5 + 5, 1);
             primaryBrain.Screen.print("                   MotorLeft POSIT: ");
-            max(&positionLeftMaximum, MotorLeftGroup.position(rev));
+            positionLeftMaximum = MotorLeftGroup.position(rev);
             primaryBrain.Screen.print("%f", positionLeftMaximum);
             primaryBrain.Screen.print("                    ");
             primaryBrain.Screen.setCursor(6 + 5, 1);
             primaryBrain.Screen.print("                  MotorRight POSIT: ");
-            max(&positionRightMaximum, MotorRightGroup.position(rev));
+            positionRightMaximum = MotorRightGroup.position(rev);
             primaryBrain.Screen.print("%f", positionRightMaximum);
             primaryBrain.Screen.print("                    ");
             primaryBrain.Screen.setCursor(7 + 5, 1);
@@ -452,7 +458,7 @@ class OverseerBasis {
                 double rightCommand = 0.0;
 
                 leftCommand = dataConnector.deriveCommand();
-                rightCommand = dataConnector.deriveCommand();
+                rightCommand = leftCommand;
 
                 if (dataConnector.getCommandType() == Pivot) {
                     if (dataConnector.getSetpoint() < 0) leftCommand *= -1;
