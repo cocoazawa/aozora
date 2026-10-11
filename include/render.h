@@ -1,13 +1,14 @@
 // render.h
-// Copyright (C) 2026 cocoazawa
 //
-// Written by Peter G.
+// Copyright (C) 2026 cocoazawa
+// For `aozora`
 
 #pragma once
 #include <vex.h>
 #include <config.h>
 #include <report.h>
 #include <string>
+#include "overseer.h"
 
 using namespace vex;
 
@@ -116,10 +117,14 @@ void refreshCompetitionStatus() {
         screenRef.print("                    ");
 
         screenRef.setCursor(3, 1);
-        screenRef.print("        Inertial Sensor: ");
-        if (reporter.report.inertialConnected && reporter.report.inertialCalibrating) {
+        screenRef.print("       Inertial Sensors: ");
+        if ((reporter.report.primaryInertialConnected && reporter.report.primaryInertialCalibrating) || 
+            (reporter.report.secondaryInertialConnected && reporter.report.secondaryInertialCalibrating) || 
+            (reporter.report.tertiaryInertialConnected && reporter.report.tertiaryInertialCalibrating)) {
             screenRef.print("Calibrating...  ");
-        } else if (reporter.report.inertialConnected && !reporter.report.inertialCalibrating) {
+        } else if ((reporter.report.primaryInertialConnected && !reporter.report.primaryInertialCalibrating) && 
+            (reporter.report.secondaryInertialConnected && !reporter.report.secondaryInertialCalibrating) && 
+            (reporter.report.tertiaryInertialConnected && !reporter.report.tertiaryInertialCalibrating)) {
             screenRef.print("Performing  ");
         } else {
             screenRef.print("Disconnected  ");
@@ -139,6 +144,29 @@ void refreshCompetitionStatus() {
             screenRef.print("Connection issues (?)");
         }
         screenRef.print("                    ");
+        
+        
+        
+        
+        
+        // screenRef.setCursor(6, 1);
+        // screenRef.print("EST POS: ");
+        // // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialHorizontal);
+        // // screenRef.print(", ");
+        // // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialVertical);
+        // // printf("%.2f, %.2f; ", OverseerDataAggregator::getInstance().PositionEstimate_InertialHorizontal, OverseerDataAggregator::getInstance().PositionEstimate_InertialVertical);
+        // // // screenRef.print(" // ");
+        // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainHorizontal);
+        // screenRef.print(", ");
+        // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainVertical);
+        // screenRef.print("                                                                                                                        ");
+
+        // screenRef.setCursor(7, 1);
+        // screenRef.print("EST HEAD: ");
+        // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_InertialHeading);
+        // screenRef.print(" // ");
+        // screenRef.print(OverseerDataAggregator::getInstance().PositionEstimate_DrivetrainHeading);
+        // screenRef.print("                                                                                                                                            ");
 
         screenRef.setOrigin(0, 0);
         vex::this_thread::sleep_for(timekeeper.ending());

@@ -5,11 +5,11 @@
 	},
 	"project": {
 		"name": "aozora",
-		"description": "[WORKING COPY] for the '26 Game Season. St. Mary's HS Robotics.",
+		"description": "[ACTUAL COPY] for the '26 Game Season. St. Mary's HS Robotics.",
 		"creationDate": "10/23/2025, 6:16:34 PM",
 		"platform": "V5",
 		"language": "cpp",
-		"slot": 1,
+		"slot": 8,
 		"sdkVersion": "V5_20240802_15_00_00",
 		"cpp": {
 			"includePath": [],

@@ -1,11 +1,11 @@
 // overseer.h
-// Copyright (C) 2026 cocoazawa
 // 
-// Written by Peter G.
+// Copyright (C) 2026 cocoazawa
+// For `aozora`
 
 #pragma once
-#include "render.h"
 #include "math.h"
+#include <cmath>
 #include "config.h"
 #include "timekeeper.h"
 
@@ -25,12 +25,204 @@ enum MotorGroupSide {
 };
 
 
+struct CoordinateOffsetDeltas {
+    double horizontalOffsetDelta;
+    double verticalOffsetDelta;
+};
+
+
+/// @brief This class, the OverseerDataAggregator has one job: it's to collect data from any possible sensors (except for the motor encoders) to generate an estimate of the current position through physics alone, and from sensor data.
+class OverseerDataAggregator {
+    private:
+        double previousDisplacement = 0;
+        double previousHeading = 0;
+
+
+        Timekeeper timekeeperAggregator = Timekeeper(TimekeepingType::MinTime, 0.1, 10.0);
+        Timekeeper timekeeperAggregatorMeasurementTime = Timekeeper(TimekeepingType::Stopwatch);
+        bool measurementTimeStarted = false;
+
+        OverseerDataAggregator() {
+            printf("[OVERSEER] OverseerDataAggregator instance created.\n");
+        }
+        
+        OverseerDataAggregator(OverseerDataAggregator const&);
+        void operator=(OverseerDataAggregator const&);
+
+        // [INERTIAL] Obtain the acceleration for the sensor based on orientation and drift
+
+        CoordinateOffsetDeltas currentInertialAcceleration(vex::inertial &inertialObject, InertialWrapper &inertialWrapper) {
+            CoordinateOffsetDeltas deltas;
+
+            // derive raw values in SI units
+            double xAcceleration = inertialObject.acceleration(xaxis) * 9.80665;
+            double yAcceleration = inertialObject.acceleration(yaxis) * 9.80665;
+            
+            // factor in drift
+            xAcceleration -= inertialWrapper.drift(xaxis);
+            yAcceleration -= inertialWrapper.drift(yaxis);
+
+            // change to appropriate relative (horizontal, vertical) and factor in
+            switch (inertialWrapper.bearing()) {
+                case InertialOrientation::FacingForward:
+                    deltas.horizontalOffsetDelta = yAcceleration;
+                    deltas.verticalOffsetDelta = xAcceleration;
+                    break;
+                case InertialOrientation::FacingRight:
+                    deltas.horizontalOffsetDelta = xAcceleration;
+                    deltas.verticalOffsetDelta = -1 * yAcceleration;
+                    break;
+                case InertialOrientation::FacingBackwards:
+                    deltas.horizontalOffsetDelta = -1 * yAcceleration;
+                    deltas.verticalOffsetDelta = -1 * xAcceleration;
+                    break;
+                case InertialOrientation::FacingLeft:
+                    deltas.horizontalOffsetDelta = -1 * xAcceleration;
+                    deltas.verticalOffsetDelta = yAcceleration;
+                    break;
+            }
+
+            return deltas;
+        }
+        
+
+
+        // [DRIVETRAIN] angular displacement and eventual displacement derivation
+
+        /// @brief gets the average of three doubles
+        /// @param doubleA first double
+        /// @param doubleB second double
+        /// @param doubleC third double
+        /// @return averaged double
+        double deriveCubicAverage(double doubleA, double doubleB, double doubleC) {
+            double averageDoubles = doubleA + doubleB + doubleC;
+            averageDoubles = averageDoubles / 3;
+            return averageDoubles;
+        }
+
+        /// @brief derives total displacement in millimeters for the active side
+        /// @return displacement in millimeters
+        double deriveDisplacement(MotorGroupSide forActiveSide) {
+            double totalRotationalDisplacement = 0.0;
+
+            // NOTE: we use revolutions for calculations here, not degrees.
+            switch (forActiveSide) {
+                case MotorGroupSide::Left: {
+                    totalRotationalDisplacement = deriveCubicAverage(MotorLeftFront.position(vex::rotationUnits::rev), MotorLeftMid.position(vex::rotationUnits::rev), MotorLeftBack.position(vex::rotationUnits::rev));
+                    break;
+                }
+                case MotorGroupSide::Right: {
+                    totalRotationalDisplacement = deriveCubicAverage(MotorRightFront.position(vex::rotationUnits::rev), MotorRightMid.position(vex::rotationUnits::rev), MotorRightBack.position(vex::rotationUnits::rev));
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+
+            // average multiplied by the gear ratio to get actual travel per cent and
+            return (totalRotationalDisplacement * GearRatio * TotalTravelDistance);
+        }
+
+
+        // [AGGREGATE]
+
+        /// @brief Aggregates up-to-date information and updates the sensor-based estimate
+        void reAggregate() {
+            timekeeperAggregator.start();
+
+            previousDisplacement = aggregatedDisplacement;
+            previousHeading = aggregatedHeading;
+
+            // NOTE: Inertial
+            
+            // i use... heading!
+            double inertialBasedHeading = (primaryInertialObject.heading() + secondaryInertialObject.heading() + tertiaryInertialObject.heading()) / 3;
+
+
+            // NOTE: Encoders
+            CoordinateOffsetDeltas encoderBasedOffset;
+            encoderBasedOffset.horizontalOffsetDelta = HorizontalRotational.position(vex::rotationUnits::rev) * TotalTrackingTravelDistance;
+            encoderBasedOffset.verticalOffsetDelta = VerticalRotational.position(vex::rotationUnits::rev) * TotalTrackingTravelDistance;
+
+            double encoderBasedHeading = encoderBasedOffset.horizontalOffsetDelta / (2 * M_PI * HorizontalEncoderCorDistance);
+
+
+            // NOTE: Drivetrain
+            double leftDisplacement = deriveDisplacement(MotorGroupSide::Left);
+            double rightDisplacement = deriveDisplacement(MotorGroupSide::Right);
+
+            CoordinateOffsetDeltas drivetrainBasedOffset;
+            double drivetrainBasedHeadingOffset = 0;
+
+            drivetrainBasedOffset.verticalOffsetDelta = leftDisplacement;
+
+            if (fabs(leftDisplacement - rightDisplacement) > 1) {
+                double radiusOfArc = (leftDisplacement * TotalMachineDiameter) / (leftDisplacement - rightDisplacement);
+                double arcAngle = (180 * leftDisplacement) / (M_PI * radiusOfArc);
+    
+                drivetrainBasedHeadingOffset = arcAngle;
+    
+                double hypotenuseOfArc = radiusOfArc - (TotalMachineDiameter / 2);
+                drivetrainBasedOffset.verticalOffsetDelta = sin(arcAngle * M_PI / 180) * hypotenuseOfArc;
+                
+                double partialExcessHorizontal = (drivetrainBasedOffset.verticalOffsetDelta * sin((90 - arcAngle) * M_PI / 180)) / sin(arcAngle * M_PI / 180);
+                drivetrainBasedOffset.horizontalOffsetDelta = hypotenuseOfArc - partialExcessHorizontal;
+            }
+
+            double aggregatedDrivetrainDisplacement = aggregatedDisplacement;
+            double aggregatedDrivetrainBasedHeading = aggregatedHeading;
+            
+            aggregatedDrivetrainDisplacement += drivetrainBasedOffset.verticalOffsetDelta;
+            aggregatedDrivetrainBasedHeading += drivetrainBasedHeadingOffset;
+            printf("%.2f\n and", aggregatedDrivetrainDisplacement);
+            printf("%.2f\n", drivetrainBasedOffset.verticalOffsetDelta);
+            
+
+            // NOTE: Reliance Based Filter
+            aggregatedDisplacement = encoderBasedOffset.verticalOffsetDelta * relianceDisplacementEncoders + aggregatedDrivetrainDisplacement * relianceDisplacementDrivetrain;
+            aggregatedHeading = inertialBasedHeading * relianceHeadingInertial + encoderBasedHeading * relianceHeadingEncoders + aggregatedDrivetrainBasedHeading * relianceHeadingDrivetrain;
+            
+            auto waitTime = timekeeperAggregator.ending();
+            wait(waitTime, msec);
+        }
+
+
+
+    public:
+        double aggregatedDisplacement = 0;
+        double aggregatedHeading = 0;
+
+
+        /// @brief gets the singleton instance of the OverseerDataAggregator class
+        static OverseerDataAggregator& getInstance() {
+            static OverseerDataAggregator instance;
+            return instance;
+        }
+
+        /// @brief resets the timekeeper
+        void resetTimekeeper() {
+            timekeeperAggregator.storeStart(std::chrono::system_clock::now());
+            timekeeperAggregatorMeasurementTime.storeStart(std::chrono::system_clock::now());
+        }
+
+        static void runAggregation() {
+            OverseerDataAggregator &localAggregatorInstance = OverseerDataAggregator::getInstance();
+
+            localAggregatorInstance.resetTimekeeper();
+
+            while(true) {
+                localAggregatorInstance.reAggregate();
+            }
+        }
+};
+
+
 /// @brief Overseer utility data provisioning and processing class
 class OverseerDataConnector {
     private:
-        MotorGroupSide ActiveSide;
-
         double Setpoint = 0;
+        CommandType Commanding = Propel;
 
         double rawCurrentError = 0;
         double rawSummedError = 0;
@@ -50,77 +242,40 @@ class OverseerDataConnector {
         double positionLeftMaximum = 0;
         double positionRightMaximum = 0;
 
-        void max(double* point, double data) {
-            if (*point < data) {
-                *point = data;
-            }
-        }
 
-
-
-
-        // angular displacement and eventual displacement derivation
-
-        /// @brief gets the average of three doubles
-        /// @param doubleA first double
-        /// @param doubleB second double
-        /// @param doubleC third double
-        /// @return averaged double
-        double deriveCubicAverage(double doubleA, double doubleB, double doubleC) {
-            double averageDoubles = doubleA + doubleB + doubleC;
-            averageDoubles = averageDoubles / 3;
-            return averageDoubles;
-        }
-
-        /// @brief derives total displacement in millimeters for the active side
-        /// @return displacement in millimeters
         double deriveDisplacement() {
-            double totalRotationalDisplacement = 0.0;
-
-            // NOTE: we use revolutions for calculations, not degrees.
-            switch (ActiveSide) {
-                case MotorGroupSide::Left: {
-                    totalRotationalDisplacement = deriveCubicAverage(MotorLeftFront.position(vex::rotationUnits::rev), MotorLeftMid.position(vex::rotationUnits::rev), MotorLeftBack.position(vex::rotationUnits::rev));
+            switch (Commanding) {
+                case Propel:
+                    return OverseerDataAggregator::getInstance().aggregatedDisplacement;
                     break;
-                }
-                case MotorGroupSide::Right: {
-                    totalRotationalDisplacement = deriveCubicAverage(MotorRightFront.position(vex::rotationUnits::rev), MotorRightMid.position(vex::rotationUnits::rev), MotorRightBack.position(vex::rotationUnits::rev));
+                case Pivot:
+                    return OverseerDataAggregator::getInstance().aggregatedHeading;
                     break;
-                }
-                default: {
-                    break;
-                }
             }
-
-            // average multiplied by the gear ratio to get actual travel per cent and
-            return (totalRotationalDisplacement * GearRatio * TotalTravelDistance);
         }
-
 
 
 
     public:
         /// @brief constructor for Datacenter with active side
         /// @param side active side
-        OverseerDataConnector(MotorGroupSide side) {
-            this->ActiveSide = side;
-        }
+        OverseerDataConnector() {}
 
         /// @brief gets the current setpoint
         /// @return setpoint (mm)
         double getSetpoint() {
             return this->Setpoint;
         }
+        /// @brief gets the current command type
+        /// @return command type (CommandType)
+        double getCommandType() {
+            return this->Commanding;
+        }
         /// @brief sets the setpoint
         /// @param newSetpoint new setpoint (mm)
-        void setSetpoint(double newSetpoint) {
+        void setSetpoint(double newSetpoint, CommandType commandType) {
             Setpoint = newSetpoint;
-        }
-
-        /// @brief gets the active side
-        /// @return active side (MotorGroupSide)
-        MotorGroupSide getActiveSide() {
-            return this->ActiveSide;
+            Commanding = commandType;
         }
 
         /// @brief gets the relative error based on setpoint and actual covered
@@ -148,18 +303,15 @@ class OverseerDataConnector {
             previousErrorValue = 0.0;
             previousElapsedTime = 0.0;
 
-            switch (ActiveSide) {
-                case Left:
-                    MotorLeftFront.resetPosition();
-                    MotorLeftMid.resetPosition();
-                    MotorLeftBack.resetPosition();
-                    break;
-                case Right:
-                    MotorRightFront.resetPosition();
-                    MotorRightMid.resetPosition();
-                    MotorRightBack.resetPosition();
-                    break;
-            }
+            HorizontalRotational.resetPosition();
+            VerticalRotational.resetPosition();
+
+            MotorLeftFront.resetPosition();
+            MotorLeftMid.resetPosition();
+            MotorLeftBack.resetPosition();
+            MotorRightFront.resetPosition();
+            MotorRightMid.resetPosition();
+            MotorRightBack.resetPosition();
         }
 
         /// @brief force stops all motors on the drivetrain (regardless of active side, stops all motors)
@@ -177,41 +329,48 @@ class OverseerDataConnector {
         /// @return returns the command to be issued to the motors
         double deriveCommand() {
             Cycles++;
+            
             double errorValue = getError();
-            if (previousErrorValue == 0) previousErrorValue = errorValue;
+            // check if the command type is pivoting to change the error from degrees to mm
+            if (Commanding == Pivot) errorValue = (M_PI * TotalMachineDiameter) * (errorValue / 360);
+            
+            // printf("%.2f\n", errorValue);
+            // printf("%.2f\n", getDisplacement());
 
+            auto elapsedTime = timekeeperData.ending() * 0.001;
+            timekeeperData.storeStart(std::chrono::system_clock::now());
+
+
+            // proportional
             rawCurrentError = errorValue;
+            // integral
             rawSummedError += errorValue;
-
-            auto elapsedTime = timekeeperData.ending();
-            timekeeperData.destoreStart();
-            timekeeperData.start();
-
-            if (elapsedTime == 0.0 && previousElapsedTime != 0.0) {
-                rawRateBasedError = (previousErrorValue - errorValue) / previousElapsedTime;
-            } else if (previousElapsedTime == 0) {
-                rawRateBasedError = 0;
-            } else {
-                rawRateBasedError = (previousErrorValue - errorValue) / elapsedTime;
-                previousElapsedTime = elapsedTime;
-            }
-
+            // clamping integral
+            if (rawSummedError > MaximumIntegralError) rawSummedError = MaximumIntegralError;
+            if (rawSummedError < -MaximumIntegralError) rawSummedError = -MaximumIntegralError;
+            // derivative
+            rawRateBasedError = (errorValue - previousErrorValue) / elapsedTime;
+            if (std::isnan(rawRateBasedError)) rawRateBasedError = 0.0;
+            previousElapsedTime = elapsedTime;
+            
+            
+            // actual derivation of command with gains
             CurrentError = ProportionalMultiplier * rawCurrentError;
             SummedError = IntegralMultiplier * rawSummedError;
             RateBasedError = DerivativeMultiplier * rawRateBasedError;
-
-            // actual derivation of command
+            
             double command = OverallMultiplier * (CurrentError + SummedError + RateBasedError);
-
+            
             // clamping command
             if (command > MaximumDirectRPM) command = MaximumDirectRPM;
             if (command < -MaximumDirectRPM) command = -MaximumDirectRPM;
-
+            
+            // set current error to previous
             previousErrorValue = errorValue;
-
+            
             primaryBrain.Screen.setFont(mono15);
             primaryBrain.Screen.setOrigin(0, 60);
-
+            
             primaryBrain.Screen.setCursor(1 + 5, 1);
             primaryBrain.Screen.print("                            Cycles: ");
             primaryBrain.Screen.print(Cycles);
@@ -230,18 +389,20 @@ class OverseerDataConnector {
             primaryBrain.Screen.print("                    ");
             primaryBrain.Screen.setCursor(5 + 5, 1);
             primaryBrain.Screen.print("                   MotorLeft POSIT: ");
-            max(&positionLeftMaximum, MotorLeftGroup.position(rev));
+            positionLeftMaximum = MotorLeftGroup.position(rev);
             primaryBrain.Screen.print("%f", positionLeftMaximum);
             primaryBrain.Screen.print("                    ");
             primaryBrain.Screen.setCursor(6 + 5, 1);
             primaryBrain.Screen.print("                  MotorRight POSIT: ");
-            max(&positionRightMaximum, MotorRightGroup.position(rev));
+            positionRightMaximum = MotorRightGroup.position(rev);
             primaryBrain.Screen.print("%f", positionRightMaximum);
             primaryBrain.Screen.print("                    ");
             primaryBrain.Screen.setCursor(7 + 5, 1);
             primaryBrain.Screen.print("               STOP COMMAND ISSUED: ");
             primaryBrain.Screen.print("FALSE");
             primaryBrain.Screen.print("                    ");
+
+            primaryBrain.Screen.setOrigin(0, 0);
 
             return command;
         }
@@ -254,8 +415,7 @@ class OverseerBasis {
 
         // central datacenter
         // TODO: Provision a datacenter with a pointer to the central timekeeper. You can make the timekeeper public.
-        OverseerDataConnector datacenterLeft = OverseerDataConnector(Left);
-        OverseerDataConnector datacenterRight = OverseerDataConnector(Right);
+        OverseerDataConnector dataConnector = OverseerDataConnector();
 
 
         /// @brief evaluates if the stop conditions have been reached for this datacenter
@@ -267,7 +427,7 @@ class OverseerBasis {
             if ((*datacenterGeneric).getError() < OverseerToleranceUpper && (*datacenterGeneric).getError() > OverseerToleranceLower) stopping = true;
             
             // emergency stop is being issued
-            if (primaryController.ButtonDown.pressing() && primaryController.ButtonUp.pressing()) stopping = true;
+            if (primaryController.ButtonDown.pressing()) stopping = true;
             
             return stopping;
         }
@@ -276,14 +436,13 @@ class OverseerBasis {
         /// @brief runs the control loop until stop is issued
         void startControl() {
             // reset the drivetrain's position values
-            datacenterLeft.resetDrivetrainDatascope();
-            datacenterRight.resetDrivetrainDatascope();
+            dataConnector.resetDrivetrainDatascope();
 
 
             // remain in control until a stop has been issued
             while (stopIssue != true) {
                 // issue a stop when the error is below the threshold
-                if (evaluateStopCondition(&datacenterLeft) && evaluateStopCondition(&datacenterRight)) {
+                if (evaluateStopCondition(&dataConnector)) {
                     primaryBrain.Screen.setFont(mono15);
                     primaryBrain.Screen.setOrigin(0, 60);
                     primaryBrain.Screen.setCursor(7 + 5, 1);
@@ -294,12 +453,19 @@ class OverseerBasis {
                     return;
                 }
 
+
                 double leftCommand = 0.0;
-                leftCommand = datacenterLeft.deriveCommand();
-                MotorLeftGroup.spin(forward, (LeftSkewMultiplier * leftCommand), vex::velocityUnits::rpm);
-                
                 double rightCommand = 0.0;
-                rightCommand = datacenterRight.deriveCommand();
+
+                leftCommand = dataConnector.deriveCommand();
+                rightCommand = leftCommand;
+
+                if (dataConnector.getCommandType() == Pivot) {
+                    if (dataConnector.getSetpoint() < 0) leftCommand *= -1;
+                    if (dataConnector.getSetpoint() > 0) rightCommand *= -1;
+                }
+
+                MotorLeftGroup.spin(forward, (LeftSkewMultiplier * leftCommand), vex::velocityUnits::rpm);
                 MotorRightGroup.spin(forward, rightCommand, vex::velocityUnits::rpm);
 
                 // // issue a stop when the error is below the threshold
@@ -325,10 +491,10 @@ class OverseerBasis {
                 // }
 
 
-                printf("%f;", leftCommand);
-                printf("%f;", rightCommand);
-                printf("%f;", datacenterLeft.getDisplacement());
-                printf("%f/", datacenterRight.getDisplacement());
+                // printf("%f;", leftCommand);
+                // printf("%f;", rightCommand);
+                // printf("%f;", datacenterLeft.getDisplacement());
+                // printf("%f/", datacenterRight.getDisplacement());
             }
         }
 
@@ -350,34 +516,30 @@ class OverseerBasis {
         /// @brief issue a stop to the overseer control function as well as stopping the drivetrain of any commands.
         void issueStop() {
             stopIssue = true;
-            OverseerDataConnector::stopDrivetrain();
+            OverseerBasis::stopDrivetrain();
         }
+
+        /// @brief force stops all motors on the drivetrain (regardless of active side, stops all motors)
+        static void stopDrivetrain() {
+            MotorLeftFront.stop();
+            MotorLeftMid.stop();
+            MotorLeftBack.stop();
+
+            MotorRightFront.stop();
+            MotorRightMid.stop();
+            MotorRightBack.stop();
+        }
+
         
         /// @brief Runs the operation until the setpoint has been reached or time outs
         /// @param commandType The type of command to operate
         /// @param setPoint The set point in MILLIMETERS OR in DEGREES depending on the type of the command
         void operation(CommandType commandType, double setpoint) {
             stopIssue = false;
-
-            switch (commandType) {
-                case Propel:
-                    datacenterLeft.setSetpoint(setpoint);
-                    datacenterRight.setSetpoint(setpoint);
-                    break;
-                default:
-                    double dialedSetpoint = (abs(setpoint) / 360.0) * M_PI * 2 * (TotalMachineDiameter / 2);
-                    if (setpoint > 0) {
-                        datacenterLeft.setSetpoint(dialedSetpoint);
-                        datacenterRight.setSetpoint(-1 * dialedSetpoint);
-                    } else {
-                        datacenterLeft.setSetpoint(-1 * dialedSetpoint);
-                        datacenterRight.setSetpoint(dialedSetpoint);
-                    }
-                    break;
-            }
-
-            datacenterLeft.resetTimekeeper();
-            datacenterRight.resetTimekeeper();
+            
+            dataConnector.resetTimekeeper();
+            dataConnector.resetDrivetrainDatascope();
+            dataConnector.setSetpoint(setpoint, commandType);
 
             startControl();
 

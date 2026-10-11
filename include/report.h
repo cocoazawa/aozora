@@ -1,7 +1,7 @@
 // report.h
-// Copyright (C) 2026 cocoazawa
 //
-// Written by Peter G.
+// Copyright (C) 2026 cocoazawa
+// For `aozora`
 
 #pragma once
 #include "vex.h"
@@ -10,8 +10,12 @@
 using namespace vex;
 
 struct Report {
-    bool inertialConnected;
-    bool inertialCalibrating;
+    bool primaryInertialConnected;
+    bool primaryInertialCalibrating;
+    bool secondaryInertialConnected;
+    bool secondaryInertialCalibrating;
+    bool tertiaryInertialConnected;
+    bool tertiaryInertialCalibrating;
     float batteryPercentage;
     float batteryTemperature;
     float batteryCurrent;
@@ -24,8 +28,6 @@ class Reporter {
     Report report;
 
     void UpdateReport() {
-        const bool preeminentInertialConnected = primaryInertial.installed();
-        const bool preeminentInertialCalibrating = primaryInertial.isCalibrating();
 
         const float preeminentBatteryCapacity = primaryBrain.Battery.capacity(vex::percent);
         const float preeminentBatteryTemperature = primaryBrain.Battery.temperature(vex::celsius);
@@ -52,8 +54,12 @@ class Reporter {
         
 
         this->report = {
-            inertialConnected : preeminentInertialConnected,
-            inertialCalibrating : preeminentInertialCalibrating,
+            primaryInertialConnected: primaryInertialObject.installed(),
+            primaryInertialCalibrating: primaryInertial.isCalibrated() ? false : true,
+            secondaryInertialConnected: secondaryInertialObject.installed(),
+            secondaryInertialCalibrating: secondaryInertial.isCalibrated() ? false : true,
+            tertiaryInertialConnected: tertiaryInertialObject.installed(),
+            tertiaryInertialCalibrating: tertiaryInertial.isCalibrated() ? false : true,
             batteryPercentage : preeminentBatteryCapacity,
             batteryTemperature : preeminentBatteryTemperature,
             batteryCurrent : preeminentBatteryCurrent,

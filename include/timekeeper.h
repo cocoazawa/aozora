@@ -1,7 +1,7 @@
 // timekeeper.h
-// Copyright (C) 2025 cocoazawa
 // 
-// Written by Peter G.
+// Copyright (C) 2025 cocoazawa
+// For `aozora`
 
 #pragma once
 #include <stdio.h>
@@ -16,12 +16,16 @@ class Timekeeper {
     private:
         bool storedStart = false;
 
-        std::chrono::_V2::system_clock::time_point startPoint;
-        std::chrono::_V2::system_clock::time_point endPoint;
+        std::chrono::system_clock::time_point startPoint;
+        std::chrono::system_clock::time_point endPoint;
 
         double minPoint;
         double setPoint;
         TimekeepingType timekeepingType;
+
+        double convertDurationToMilliseconds(std::chrono::duration<double> someDuration) {
+            return std::chrono::duration<double, std::milli>(someDuration).count();
+        }
     
     public:
         /// @brief constructor with minimum time and set time (the time we want to reach) for differential calculation
@@ -37,7 +41,7 @@ class Timekeeper {
         /// @brief constructor for supplying the start time for use in calculations
         /// @param timekeepingType timekeeping type
         /// @param startTimeSupplied start point (usually for stopwatches)
-        Timekeeper(TimekeepingType givenTimekeepingType, std::chrono::_V2::system_clock::time_point startTimeSupplied) {
+        Timekeeper(TimekeepingType givenTimekeepingType, std::chrono::system_clock::time_point startTimeSupplied) {
             timekeepingType = givenTimekeepingType;
             startPoint = startTimeSupplied;
         }
@@ -61,9 +65,9 @@ class Timekeeper {
 
         /// @brief store an arbitrary time to use as the starting point
         /// @param timeToStore arbitrary time
-        void storeStart(std::chrono::_V2::system_clock::time_point timeToStore) {
+        void storeStart(std::chrono::system_clock::time_point timeToStore) {
             storedStart = true;
-            startPoint = std::chrono::system_clock::now();
+            startPoint = timeToStore;
         }
 
         /// @brief unlock the stored time variable
@@ -75,17 +79,18 @@ class Timekeeper {
         /// @return final time to stop for (MinTime) OR the elapsed time since given start time (Stopwatch)
         double ending() {
             endPoint = std::chrono::system_clock::now();
-            std::chrono::duration<double> elapsedTime = endPoint - startPoint;
+            std::chrono::duration<double> elapsedTimeNative = endPoint - startPoint;
+            double elapsedTime = convertDurationToMilliseconds(elapsedTimeNative);
             // printf("[  GET   ] ChronosAssist: Elapsed Time %f\n", elapsedTime.count());
 
             switch (this->timekeepingType) {
                 case TimekeepingType::Stopwatch: {
-                    return elapsedTime.count();
+                    return elapsedTime;
                     break;
                 }
 
                 case TimekeepingType::MinTime: {
-                    double staleDuration = setPoint - elapsedTime.count();
+                    double staleDuration = setPoint - elapsedTime;
                     if (staleDuration < minPoint) {
                         // printf("[  GET   ] ChronosAssist: Returning minPoint of %f\n", minPoint);
                         // printf("[  READ  ] ChronosAssist: staleDuration was %f\n", staleDuration);

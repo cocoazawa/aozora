@@ -1,7 +1,7 @@
 // auxilary.cpp
-// Copyright (C) 2025 cocoazawa
 //
-// Written by Peter G.
+// Copyright (C) 2025 cocoazawa
+// For `aozora`
 
 #pragma once
 #include "v5.h"
@@ -35,21 +35,28 @@ void trigger(vex::digital_out &peripheral) {
     }
 }
 
+void max(double* point, double data) {
+    if (*point < data) {
+        *point = data;
+    }
+}
+
+void setDrivetrainBraking(vex::brakeType newBrakeType) {
+    MotorLeftFront.setBrake(newBrakeType);
+    MotorLeftMid.setBrake(newBrakeType);
+    MotorLeftBack.setBrake(newBrakeType);
+    MotorRightFront.setBrake(newBrakeType);
+    MotorRightMid.setBrake(newBrakeType);
+    MotorRightBack.setBrake(newBrakeType);
+}
 
 
 void initializeVEX(void) {
-    primaryInertial.calibrate();
+    // primaryInertial.calibrate();
+    // secondaryInertial.calibrate();
+    // tertiaryInertial.calibrate();
 
-    while (primaryInertial.isCalibrating()) {
-        wait(5, msec);
-    }
-    
-    MotorLeftFront.setBrake(vex::brakeType::coast);
-    MotorLeftMid.setBrake(vex::brakeType::coast);
-    MotorLeftBack.setBrake(vex::brakeType::coast);
-    MotorRightFront.setBrake(vex::brakeType::coast);
-    MotorRightMid.setBrake(vex::brakeType::coast);
-    MotorRightBack.setBrake(vex::brakeType::coast);
+    setDrivetrainBraking(vex::brakeType::coast);
     MotorSpinner.setBrake(vex::brakeType::coast);
     MotorIntake.setBrake(vex::brakeType::coast);
     
