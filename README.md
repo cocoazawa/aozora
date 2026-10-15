@@ -18,4 +18,4 @@ This code does not work for the most part due to the highly faulty and unreliabl
 
 [Inertial Sensor odd behavior - VEX V5 Technical Support - VEX Forum](https://www.vexforum.com/t/inertial-sensor-odd-behavior/131675)
 
-The final integration of this codebase was executed within a 12-hour overnight window. without a CAD model, and under rapid-iteration. Because the actual robot was still being adjusted 20 minutes before the first match and without a "design freeze", the physical kinematics of the robot were non-deterministic during development. I designed this codebase to push the limits of standard high school robotics software for myself and for the team. Here it lies for reference.
+I designed this codebase to push the limits of standard high school robotics software for myself and for the team. Here it lies for reference. The final integration of this codebase was executed within a 12-hour window. without a CAD model, and under rapid-iteration. Because the actual robot was still being adjusted 20 minutes before the first match and without a design freeze, the physical kinematics of the robot were non-deterministic during development. 
